@@ -1,0 +1,33 @@
+{
+  "_readme": "상품 메타데이터 설정 파일. 시트에 신규 상품 행이 추가되면 여기에 한 줄만 추가하면 됩니다 — 코드(parseSheet.js 등)는 손댈 필요 없습니다. 자세한 절차는 ../business-rules.md의 '신규 상품 추가' 섹션 참고.",
+  "_fields": {
+    "sheetLabel": "시트의 실적 상세 블록(또는 KPI 요약 블록) 컬럼 C/D에 나오는 상품명 그대로. 공백 유무는 무시하고 비교하므로 신경 쓰지 않아도 됩니다.",
+    "key": "대시보드(index.html/data.json)에서 쓰는 정식 상품 키. 시트 표기와 다를 수 있음(예: 스텔라이즈 -> Stellaize).",
+    "team": "biz(미디어사업팀) 또는 mkt(미디어마케팅팀). 이 값이 없으면(신규 상품) team:null로 반영되고 경고가 발생함 — 대시보드 총계에는 잡히지만 팀별 탭에는 안 뜸."
+  },
+  "products": [
+    { "sheetLabel": "비즈링", "key": "비즈링", "team": "biz" },
+    { "sheetLabel": "들리고", "key": "들리고", "team": "biz" },
+    { "sheetLabel": "문자&B2G", "key": "문자B2G", "team": "biz" },
+    { "sheetLabel": "옥외광고", "key": "옥외광고", "team": "biz" },
+    {
+      "sheetLabel": "용역사업(sk광고+커머스렙)",
+      "key": "용역",
+      "team": "biz",
+      "_note": "실적 상세 블록의 풀네임. KPI 요약 블록은 '용역사업(매출)'처럼 짧은 이름을 쓰므로 아래 별칭 항목도 함께 필요."
+    },
+    {
+      "sheetLabel": "용역사업",
+      "key": "용역",
+      "team": "biz",
+      "_note": "KPI 요약 블록 전용 짧은 별칭. 위 항목과 같은 상품(key: 용역)을 가리킴."
+    },
+    { "sheetLabel": "다윈", "key": "다윈", "team": "mkt" },
+    { "sheetLabel": "ASUM", "key": "ASUM", "team": "mkt" },
+    { "sheetLabel": "비즈챗", "key": "비즈챗", "team": "mkt" },
+    { "sheetLabel": "스텔라이즈", "key": "Stellaize", "team": "mkt" },
+    { "sheetLabel": "RMN", "key": "RMN", "team": "mkt" },
+    { "sheetLabel": "기타", "key": "기타", "team": "mkt" },
+    { "sheetLabel": "리사이즈애드", "key": "리사이즈애드", "team": "mkt" }
+  ]
+}

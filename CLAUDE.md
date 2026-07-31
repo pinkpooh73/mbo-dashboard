@@ -97,8 +97,38 @@ sheet export, not live credentials.
   top-N — verified this exactly reproduces the old hand-curated 7/24→7/31
   list (same products, same order) before removing the manual data.
 
+**Phase 5 (stabilization: anomaly alerts, product metadata, docs) is built.**
+- **[business-rules.md](business-rules.md) is the canonical explanation of
+  every calculation rule** (units, the 취급고 exclusion flag, "1~N월",
+  snapshot dedup, anomaly thresholds) — read it before touching any
+  aggregate calculation, and update it when the logic changes. This
+  CLAUDE.md file is oriented at "what's built and where," business-rules.md
+  is oriented at "why the numbers come out the way they do."
+- [sync/productConfig.json](sync/productConfig.json): product name-mapping
+  + team assignment moved out of `nameAliases.js` code into this JSON file
+  specifically so a non-engineer can add a new product with one line, no JS
+  required (see business-rules.md §3 for the exact procedure).
+  `nameAliases.js` is now just a thin loader over it.
+- [sync/detectAnomalies.js](sync/detectAnomalies.js): flags (a) a product's
+  취급고 exactly equaling 매출 when that's *not* its usual pattern (compares
+  against its own prior months — a product like Stellaize that's *always*
+  bill===rev is correctly never flagged; this was caught and fixed via a
+  test against the real data before shipping), and (b) >=5x / <=0.2x
+  month-over-month swings, excluding 0→N (new activation) and N→0 (reads as
+  "not entered yet" in this sheet, not a data error — also caught via a real
+  false-positive against live July data before shipping, see the file's
+  comments). Takes an explicit `monthIdx` rather than inferring "current
+  month" from the data — a real bug during development: 용역 has figures
+  pre-filled through December, which made data-inferred "latest month"
+  wrong for every other product.
+- [sync/notify.js](sync/notify.js): sends anomalies to Slack via
+  `SLACK_WEBHOOK_URL` (GitHub Actions secret, not set yet — ask the user for
+  it, then `gh secret set SLACK_WEBHOOK_URL`). Missing webhook = anomalies
+  still show up as `::warning::` annotations on the Actions run, sync itself
+  never fails because of an anomaly or a notification-delivery problem.
+
 See [PRD_미디어사업실_매출관리_대시보드_5Phase_ClaudeCode.md](PRD_미디어사업실_매출관리_대시보드_5Phase_ClaudeCode.md)
-(the authoritative, Phase-numbered PRD) for what's next (Phase 5); the older
+(the authoritative, Phase-numbered PRD) for what's next; the older
 [PRD_미디어사업실_매출관리_대시보드_고도화.md](PRD_미디어사업실_매출관리_대시보드_고도화.md)
 is the original draft it superseded — prefer the 5-Phase doc when the two differ.
 

@@ -20,6 +20,8 @@ const { GoogleAuth } = require('google-auth-library');
 const { parseSheet, SheetStructureError, padRow } = require('./parseSheet');
 const { renderRawTable } = require('./renderRawTable');
 const { appendSnapshot } = require('./mergeSnapshot');
+const { detectAnomalies } = require('./detectAnomalies');
+const { notifyAnomalies } = require('./notify');
 
 const SHEET_NAME = '미디어사업실_전체';
 const RANGE = `${SHEET_NAME}!A1:S120`;
@@ -92,6 +94,9 @@ async function main() {
 
   for (const w of result.warnings) ghWarning(w);
 
+  const anomalies = detectAnomalies(result.products);
+  for (const a of anomalies) ghWarning(`[이상치] ${a.detail}`);
+
   const existing = JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8'));
 
   const newSnapshotHistory = appendSnapshot(existing.snapshotHistory, result.products);
@@ -105,6 +110,7 @@ async function main() {
     },
     rawTableHtml: renderRawTable(rows.map(padRow)),
     dataQualityWarnings: result.warnings,
+    dataQualityAnomalies: anomalies,
     snapshotHistory: newSnapshotHistory
   });
   // Phase 4: WEEKCMP/WEEKPROD ("주차별 비교") are now derived client-side
@@ -117,8 +123,20 @@ async function main() {
   fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(updated), 'utf8');
   console.log(
     `data.json 갱신 완료 (products: ${Object.keys(result.products).length}, ` +
-    `warnings: ${result.warnings.length}, snapshotHistory: ${newSnapshotHistory.length}개)`
+    `warnings: ${result.warnings.length}, anomalies: ${anomalies.length}, ` +
+    `snapshotHistory: ${newSnapshotHistory.length}개)`
   );
+
+  // 이상치 알림은 data.json 갱신이 끝난 뒤에 시도한다 — 알림 전송이 실패하더라도
+  // (예: Slack webhook 일시 장애) 이미 성공한 동기화 자체를 실패로 만들지 않기 위함.
+  const sheetUrl = process.env.GOOGLE_SHEET_ID
+    ? `https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEET_ID}/edit`
+    : undefined;
+  try {
+    await notifyAnomalies(anomalies, { sheetUrl });
+  } catch (e) {
+    ghWarning('이상치 알림 전송 중 오류가 발생했지만 동기화 자체는 정상 완료된 상태입니다: ' + e.message);
+  }
 }
 
 main().catch((e) => {
