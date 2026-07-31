@@ -38,9 +38,10 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html data.json _site/
-          # Add anything else the dashboard needs to load (fonts/CSS are
-          # loaded from CDNs by index.html itself, so nothing else is
-          # required). Deliberately NOT publishing sync/, PRD docs, or
+          cp -r assets _site/
+          # index.html references assets/ (login-gate CI logo). Fonts/Chart.js
+          # are loaded from CDNs by index.html itself, so nothing else is
+          # required. Deliberately NOT publishing sync/, PRD docs, or
           # CLAUDE.md — the Pages URL only needs to serve the dashboard.
 
       - name: Setup Pages
