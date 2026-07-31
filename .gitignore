@@ -1,2 +1,3 @@
 sync/node_modules/
 sync/scripts/dryRun.out.json
+sync/scripts/dryRun.out.raw-table.html

@@ -66,14 +66,18 @@ jobs:
         # untouched, and the failed run itself is GitHub's notification to
         # whoever watches this repo's Actions.
 
-      - name: Commit data.json if changed
+      - name: Commit data.json / raw-table.html if changed
         run: |
-          if git diff --quiet -- data.json; then
-            echo "No changes to data.json."
+          # sync.js leaves both files completely untouched when nothing
+          # material changed (no updatedAt churn — see sync/detectChanges.js),
+          # so this guard is a real short-circuit now: an unchanged sheet
+          # produces no commit and therefore no Pages redeploy.
+          if git diff --quiet -- data.json raw-table.html; then
+            echo "No changes to data.json / raw-table.html."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.json
+          git add data.json raw-table.html
           git commit -m "chore: sync data.json from Google Sheet [skip ci]"
           git push

@@ -51,6 +51,25 @@ function labelEq(row, colIdx, expected) {
   return stripWs(cell(row, colIdx)) === stripWs(expected);
 }
 
+// Anchor-relative row access (`rows[anchorIdx + 1]` and friends) is how every
+// block in this sheet is read. If the sheet is truncated — a shortened fetch
+// range, a deleted trailing block, an export that stops early — that index is
+// simply `undefined` and the *next* cell() call blows up with a bare TypeError
+// ("예상치 못한 오류로 중단되었습니다"), which tells the person on call
+// nothing. Every out-of-range access must instead surface as a
+// SheetStructureError naming the row we expected and why, exactly like the
+// label-mismatch errors below.
+function requireRow(rows, idx, ctx) {
+  const row = rows[idx];
+  if (!row) {
+    throw new SheetStructureError(
+      `${ctx}에 해당하는 행(시트 ${idx + 1}번째 행)이 없습니다 — 시트가 예상보다 일찍 끝났거나 ` +
+      `해당 블록이 통째로 삭제/이동된 것으로 보입니다 (읽어온 행 수: ${rows.length}).`
+    );
+  }
+  return row;
+}
+
 // ---- totals block (rows ~5-11): used only as a cross-check, never written
 // directly into data.json (Phase 1 already made the frontend compute totals
 // from `products` at runtime) ----
@@ -68,8 +87,8 @@ function parseTotalsBlock(rows) {
       '총계 블록의 "KPI / Total" 헤더 행을 찾지 못했습니다 (시트 상단 구조 변경 의심).'
     );
   }
-  const kpiBRow = rows[kpiTotalIdx + 1];
-  const kpiRRow = rows[kpiTotalIdx + 2];
+  const kpiBRow = requireRow(rows, kpiTotalIdx + 1, '총계 블록 "KPI/Total" 바로 다음의 "취급고"');
+  const kpiRRow = requireRow(rows, kpiTotalIdx + 2, '총계 블록 "KPI/Total" 두 행 뒤의 "매출"');
   if (!labelEq(kpiBRow, COL.D, '취급고')) {
     throw new SheetStructureError(
       `"KPI/Total" 다음 행이 "취급고"가 아닙니다: "${cell(kpiBRow, COL.D)}"`
@@ -93,7 +112,8 @@ function parseTotalsBlock(rows) {
       '총계 블록의 "매출 Total / 취급고" 헤더 행을 찾지 못했습니다.'
     );
   }
-  const actRRow = rows[actHeaderIdx + 2];
+  const actBRow = requireRow(rows, actHeaderIdx, '총계 블록 "매출 Total / 취급고" 실적');
+  const actRRow = requireRow(rows, actHeaderIdx + 2, '총계 블록 "매출 Total" 취급고 두 행 뒤의 "매출" 실적');
   if (!labelEq(actRRow, COL.D, '매출')) {
     throw new SheetStructureError(
       `총계 실적 취급고 두 행 뒤가 "매출"이 아닙니다: "${cell(actRRow, COL.D)}"`
@@ -103,7 +123,7 @@ function parseTotalsBlock(rows) {
   return {
     totalKpiB: readMonthly(kpiBRow, '총계 취급고 KPI'),
     totalKpiR: readMonthly(kpiRRow, '총계 매출 KPI'),
-    totalActB: readMonthly(rows[actHeaderIdx], '총계 취급고 실적'),
+    totalActB: readMonthly(actBRow, '총계 취급고 실적'),
     totalActR: readMonthly(actRRow, '총계 매출 실적'),
     endIdx: actHeaderIdx + 4
   };
@@ -180,7 +200,7 @@ function parseDetailBlock(rows, startIdx) {
     const resolved = resolveProduct(c);
     const key = resolved ? resolved.key : c;
     const team = resolved ? resolved.team : null;
-    if (!resolved) warnings.push(`신규/미분류 상품 발견: "${c}" (team 미지정으로 반영됨 — nameAliases.js 확인 필요)`);
+    if (!resolved) warnings.push(`신규/미분류 상품 발견: "${c}" (team 미지정(null)으로 반영됨 — sync/productConfig.json에 매핑 추가 필요)`);
     products.set(key, { team, act_b, act_r, bill, rev, excludeFromBillTotal, sheetLabel: c });
     i = j;
   }
@@ -224,7 +244,10 @@ function parseSheet(rawRows) {
     throw new SheetStructureError('"미디어사업실 상품별 KPI 분석" 섹션 헤더를 찾지 못했습니다.');
   }
   let summaryStart = sectionIdx + 1;
-  if (labelEq(rows[summaryStart], COL.C, 'KPI') && labelEq(rows[summaryStart], COL.D, 'Total')) {
+  const firstSummaryRow = requireRow(
+    rows, summaryStart, '"미디어사업실 상품별 KPI 분석" 섹션 헤더 바로 다음 행'
+  );
+  if (labelEq(firstSummaryRow, COL.C, 'KPI') && labelEq(firstSummaryRow, COL.D, 'Total')) {
     summaryStart += 1; // skip the redundant repeated totals row
   }
 

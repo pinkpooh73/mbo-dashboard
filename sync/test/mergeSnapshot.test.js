@@ -1,7 +1,19 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { appendSnapshot, seoulDateString } = require('../mergeSnapshot');
+const {
+  appendSnapshot,
+  seoulDateString,
+  RETENTION_DAYS,
+  MIN_KEPT_ENTRIES
+} = require('../mergeSnapshot');
+
+// 'YYYY-MM-DD' for `days` before the given reference date.
+function daysBefore(refIso, days) {
+  const d = new Date(refIso);
+  d.setUTCDate(d.getUTCDate() - days);
+  return seoulDateString(d);
+}
 
 const sampleProducts = {
   '비즈링': { team: 'biz', kpi_b: [1], kpi_r: [1], act_b: [1], act_r: [1], excludeFromBillTotal: false },
@@ -51,6 +63,55 @@ test('snapshot only keeps the fields the frontend actually needs (no bill/rev % 
   const p = result[0].products['용역'];
   assert.deepEqual(Object.keys(p).sort(), ['act_b', 'act_r', 'excludeFromBillTotal', 'kpi_b', 'kpi_r', 'team']);
   assert.equal(p.excludeFromBillTotal, true);
+});
+
+test(`drops entries older than ${RETENTION_DAYS} days and keeps recent ones`, () => {
+  const nowIso = '2026-07-31T09:00:00+09:00';
+  const existing = [
+    { date: daysBefore(nowIso, 400), products: {} }, // way past retention
+    { date: daysBefore(nowIso, 120), products: {} }, // past retention
+    { date: daysBefore(nowIso, RETENTION_DAYS + 1), products: {} }, // just past the cutoff
+    { date: daysBefore(nowIso, RETENTION_DAYS - 1), products: {} }, // just inside
+    { date: daysBefore(nowIso, 7), products: {} } // recent
+  ];
+  const result = appendSnapshot(existing, sampleProducts, new Date(nowIso));
+  const dates = result.map((s) => s.date);
+  assert.deepEqual(dates, [
+    daysBefore(nowIso, RETENTION_DAYS - 1),
+    daysBefore(nowIso, 7),
+    '2026-07-31'
+  ], 'only entries within the retention window (plus today) survive');
+});
+
+test('retention keeps the freshly appended entry even when everything else is old', () => {
+  const nowIso = '2026-07-31T09:00:00+09:00';
+  const existing = [{ date: daysBefore(nowIso, 365), products: {} }];
+  const result = appendSnapshot(existing, sampleProducts, new Date(nowIso));
+  assert.ok(result.some((s) => s.date === '2026-07-31'), "today's entry must never be pruned");
+});
+
+test(`never prunes below ${MIN_KEPT_ENTRIES} entries, so 주차별 비교 always has something to compare`, () => {
+  // Sync stopped for a year, then resumed: an age-only filter would leave a
+  // single entry and the frontend's latestTwoSnapshots() would come up empty.
+  const nowIso = '2026-07-31T09:00:00+09:00';
+  const existing = [
+    { date: daysBefore(nowIso, 400), products: {} },
+    { date: daysBefore(nowIso, 380), products: {} }
+  ];
+  const result = appendSnapshot(existing, sampleProducts, new Date(nowIso));
+  assert.equal(result.length, MIN_KEPT_ENTRIES);
+  assert.equal(result[result.length - 1].date, '2026-07-31');
+  assert.equal(result[0].date, daysBefore(nowIso, 380), 'keeps the most recent of the stale ones');
+});
+
+test('a history entirely inside the retention window is left intact', () => {
+  const existing = [
+    { date: '2026-07-16', products: {} },
+    { date: '2026-07-23', products: {} },
+    { date: '2026-07-24', products: {} }
+  ];
+  const result = appendSnapshot(existing, sampleProducts, new Date('2026-07-31T09:00:00+09:00'));
+  assert.deepEqual(result.map((s) => s.date), ['2026-07-16', '2026-07-23', '2026-07-24', '2026-07-31']);
 });
 
 test('seoulDateString uses the Asia/Seoul calendar date, not UTC', () => {

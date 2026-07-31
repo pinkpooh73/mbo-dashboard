@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>'26년 미디어사업실 KPI 달성현황</title>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- defer: 로그인 게이트에는 차트가 없으므로 ~200KB 스크립트가 첫 페인트를 막지
+     않게 한다. defer된 스크립트는 파싱이 끝난 뒤(DOMContentLoaded 직전) 실행되므로
+     body 하단의 인라인 스크립트보다 "나중에" 실행된다 → Chart 전역을 건드리는
+     코드는 전부 applyChartDefaults()/initDashboard() 안으로 옮겨져 있다. -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root{
   /* Vuexy-inspired palette */
@@ -219,6 +223,9 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
 </div>
 <div class="wrap">
 
+<!-- 데이터 품질 경고 배너 (data.json에 dataQualityWarnings/Anomalies가 있을 때만 표시) -->
+<div id="dq-banner" role="status" aria-live="polite" style="display:none;"></div>
+
 <!-- KPI 달성현황 -->
 <div id="pg-kpi" class="page active">
   <div class="g4" id="kpi-cards"></div>
@@ -327,13 +334,28 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
 </div><!-- /wrap -->
 </div><!-- /main -->
 </div><!-- /app -->
+<!-- 순수 계산 로직(집계/주차별 비교 등). Node에서도 require 가능해 테스트 대상이 된다.
+     defer 없이 인라인 스크립트 바로 위에 둬서 실행 순서를 보장한다. -->
+<script src="compute.js"></script>
 <script>
 var TOTAL,PRODS,BIZ,MKT,TKPIB,TKPIR,TACTB,TACTR,TQKPI,TQACT,STELLA,N,AG,CD,WEEKCMP,WEEKPROD,DATA;
-const M=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-const QQ=['Q1','Q2','Q3','Q4'];
+// compute.js가 없으면 이 아래는 전부 못 돈다 — 조용히 아무 반응 없는 로그인
+// 화면이 되지 않도록 눈에 보이는 안내부터 남기고 중단한다.
+if(typeof MONTH_LABELS==='undefined'){
+  var ge=document.getElementById('gate-err');
+  if(ge) ge.textContent='필수 스크립트(compute.js)를 불러오지 못했습니다. 새로고침하거나 관리자에게 문의해 주세요.';
+  throw new Error('compute.js is required but was not loaded');
+}
+// 월/분기 라벨과 달성률 임계값은 compute.js가 전역으로 제공(테스트에서도 같은 값 사용).
+var M=MONTH_LABELS;
+var QQ=QUARTER_LABELS;
 
 // ── Chart.js 전역 스타일 (디자인 시스템과 동일 톤) ──
-if(window.Chart){
+// Chart.js는 defer 로드라 이 스크립트가 실행되는 시점엔 아직 없다.
+// 반드시 차트를 그리기 직전(initDashboard)에 호출할 것 — 먼저 실행되면
+// 에러 없이 조용히 스타일만 적용되지 않는다.
+function applyChartDefaults(){
+  if(!window.Chart) return false;
   Chart.defaults.font.family='"Public Sans","Noto Sans KR",sans-serif';
   Chart.defaults.font.size=11;
   Chart.defaults.color='#6F6B7D';
@@ -349,18 +371,8 @@ if(window.Chart){
   Chart.defaults.plugins.tooltip.boxPadding=4;
   Chart.defaults.datasets.bar.borderRadius=4;
   Chart.defaults.datasets.bar.maxBarThickness=34;
+  return true;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -372,23 +384,32 @@ const PAL=['#7367F0','#28C76F','#FF9F43','#EA5455','#00BAD1','#16B1FF','#A78BFA'
 
 
 function fmt(v){return v>=10000?Math.round(v/10000)+'억':v.toLocaleString()+'만';}
-function pct(a,k){return k>0?Math.round(a/k*1000)/10:0;}
 function s3(a,s){return a.slice(s,s+3).reduce((x,y)=>x+y,0);}
-function rc(v){return v>=100?'#28C76F':v>=70?'#FF9F43':v>0?'#EA5455':'#A5A3AE';}
+// 달성률 색상 — 임계값은 compute.js의 RATE_ACHIEVED_PCT/RATE_WARNING_PCT.
+function rc(v){return v>=RATE_ACHIEVED_PCT?'#28C76F':v>=RATE_WARNING_PCT?'#FF9F43':v>0?'#EA5455':'#A5A3AE';}
 function f0(v){return(!v&&v!==0)?'-':Math.round(v).toLocaleString();}
 
 // ── 페이지 전환 ──
 const PAGES=['kpi','biz','mkt','ag','camp','raw'];
+// 탭 진입 시 처음 한 번만 그리는 화면들. 데이터 로드가 실패한 상태에서 눌러도
+// 처리 안 된 예외가 나지 않도록 감싼다(빈 화면이 되더라도 콘솔에만 남긴다).
+function lazyBuild(fn,label){
+  try{ fn(); }catch(e){ console.error('['+label+'] 렌더링 실패', e); }
+}
 function go(p){
   document.body.classList.remove('side-open');
+  // 데이터가 아직/영영 없으면(로드 실패) 탭 전환 자체를 하지 않는다 — 페이지
+  // 컨테이너가 오류 화면으로 대체된 상태라 건드리면 예외가 난다.
+  if(!DATA) return;
   PAGES.forEach(function(k){
-    document.getElementById('pg-'+k).classList.toggle('active',k===p);
-    document.getElementById('nb-'+k).classList.toggle('on',k===p);
+    var pg=document.getElementById('pg-'+k), nb=document.getElementById('nb-'+k);
+    if(pg) pg.classList.toggle('active',k===p);
+    if(nb) nb.classList.toggle('on',k===p);
   });
-  if(p==='ag'&&!window.agDone){buildAG();window.agDone=true;}
-  if(p==='biz'&&!window.bizDone){buildTeam('biz');window.bizDone=true;}
-  if(p==='mkt'&&!window.mktDone){buildTeam('mkt');window.mktDone=true;}
-  if(p==='raw'&&!window.rawDone){buildRaw();window.rawDone=true;}
+  if(p==='ag'&&!window.agDone){lazyBuild(buildAG,'대행사별 매출');window.agDone=true;}
+  if(p==='biz'&&!window.bizDone){lazyBuild(function(){buildTeam('biz');},'미디어사업팀');window.bizDone=true;}
+  if(p==='mkt'&&!window.mktDone){lazyBuild(function(){buildTeam('mkt');},'미디어마케팅팀');window.mktDone=true;}
+  if(p==='raw'&&!window.rawDone){lazyBuild(buildRaw,'KPI 데이터');window.rawDone=true;}
 }
 
 // ── 차트 헬퍼 ──
@@ -555,20 +576,20 @@ function buildQTotal(){
   });
 }
 
+// 분기별 상품 달성률 — 상품 목록은 data.json에서 동적으로 만든다(하드코딩 금지).
+// 한 상품의 한 분기 달성률: Stellaize의 Q1 취급고만 시트 지정값(STELLA)으로 대체.
+function qRateOf(item,seg,qi){
+  if(seg==='b'&&item.name==='Stellaize'&&qi===0) return STELLA;
+  return quarterRate(item.rates,qi,QUARTER_AVG_INCLUDE_ZERO.indexOf(item.name)>=0);
+}
+
 function buildQProd(id,seg){
-  var OD=['옥외광고','다윈'];
-  var rmap=seg==='b'?
-    {'비즈링':PRODS['비즈링'].bill,'들리고':PRODS['들리고'].bill,'문자B2G':PRODS['문자B2G'].bill,'옥외광고':PRODS['옥외광고'].bill,'ASUM':PRODS['ASUM'].bill,'비즈챗':PRODS['비즈챗'].bill,'Stellaize':PRODS['Stellaize'].bill,'RMN':PRODS['RMN'].bill}:
-    {'비즈링':PRODS['비즈링'].rev,'들리고':PRODS['들리고'].rev,'문자B2G':PRODS['문자B2G'].rev,'옥외광고':PRODS['옥외광고'].rev,'용역':PRODS['용역'].rev,'다윈':PRODS['다윈'].rev,'ASUM':PRODS['ASUM'].rev,'비즈챗':PRODS['비즈챗'].rev,'Stellaize':PRODS['Stellaize'].rev,'RMN':PRODS['RMN'].rev};
-  var labels=Object.keys(rmap);
+  var items=quarterSegmentProducts(PRODS,seg);
+  var labels=items.map(function(it){return it.name;});
   var pal_q=['rgba(115,103,240,.85)','rgba(40,199,111,.85)','rgba(255,159,67,.9)','rgba(234,84,85,.85)'];
   var ds=QQ.map(function(q,qi){
-    return {label:q,backgroundColor:pal_q[qi],borderWidth:0,data:labels.map(function(p){
-      if(seg==='b'&&p==='Stellaize'&&qi===0) return STELLA;
-      var arr=rmap[p]; if(!arr||!arr.length) return 0;
-      var sl=arr.slice(qi*3,qi*3+3);
-      var vals=OD.indexOf(p)>=0?sl:sl.filter(function(v){return v>0;});
-      return vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10:0;
+    return {label:q,backgroundColor:pal_q[qi],borderWidth:0,data:items.map(function(it){
+      return qRateOf(it,seg,qi);
     })};
   });
   new Chart(document.getElementById(id),{type:'bar',data:{labels:labels,datasets:ds},
@@ -580,24 +601,12 @@ function buildQProd(id,seg){
 }
 
 function buildQTbl(id,seg){
-  var OD=['옥외광고','다윈'];
-  var rmap=seg==='b'?
-    {'비즈링':PRODS['비즈링'].bill,'들리고':PRODS['들리고'].bill,'문자B2G':PRODS['문자B2G'].bill,'옥외광고':PRODS['옥외광고'].bill,'ASUM':PRODS['ASUM'].bill,'비즈챗':PRODS['비즈챗'].bill,'Stellaize':PRODS['Stellaize'].bill,'RMN':PRODS['RMN'].bill}:
-    {'비즈링':PRODS['비즈링'].rev,'들리고':PRODS['들리고'].rev,'문자B2G':PRODS['문자B2G'].rev,'옥외광고':PRODS['옥외광고'].rev,'용역':PRODS['용역'].rev,'다윈':PRODS['다윈'].rev,'ASUM':PRODS['ASUM'].rev,'비즈챗':PRODS['비즈챗'].rev,'Stellaize':PRODS['Stellaize'].rev,'RMN':PRODS['RMN'].rev};
-  document.getElementById(id).innerHTML=Object.entries(rmap).map(function(entry){
-    var prod=entry[0], arr=entry[1];
-    if(!arr||!arr.length) return '';
+  document.getElementById(id).innerHTML=quarterSegmentProducts(PRODS,seg).map(function(it){
     var cells=QQ.map(function(_,qi){
-      var v;
-      if(seg==='b'&&prod==='Stellaize'&&qi===0){v=STELLA;}
-      else{
-        var sl=arr.slice(qi*3,qi*3+3);
-        var vals=(['옥외광고','다윈'].indexOf(prod)>=0)?sl:sl.filter(function(x){return x>0;});
-        v=vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10:0;
-      }
+      var v=qRateOf(it,seg,qi);
       return '<td style="color:'+rc(v)+';font-family:DM Mono,monospace;">'+v.toFixed(1)+'%</td>';
     }).join('');
-    return '<tr><td style="font-weight:500;">'+prod+'</td>'+cells+'</tr>';
+    return '<tr><td style="font-weight:500;">'+it.name+'</td>'+cells+'</tr>';
   }).join('');
 }
 
@@ -618,8 +627,8 @@ function buildTeam(tm){
   var ar=D.act_r.slice(0,N).reduce(function(a,b){return a+b;},0);
   var br=pct(ab,kb), rr=pct(ar,kr);
   document.getElementById(tm+'-cards').innerHTML=
-    '<div class="card" style="--ac:#00BAD1;"><div class="kl">취급고 KPI (1~'+N+'월)</div><div class="kv" style="color:#00BAD1;">'+(kb*10000).toLocaleString()+'</div><div class="ks">연간 '+D.kpi_b.reduce(function(a,b){return a+b;},0)*10000+'</div></div>'+
-    '<div class="card" style="--ac:#FF9F43;"><div class="kl">매출 KPI (1~'+N+'월)</div><div class="kv" style="color:#FF9F43;">'+(kr*10000).toLocaleString()+'</div><div class="ks">연간 '+D.kpi_r.reduce(function(a,b){return a+b;},0)*10000+'</div></div>'+
+    '<div class="card" style="--ac:#00BAD1;"><div class="kl">취급고 KPI (1~'+N+'월)</div><div class="kv" style="color:#00BAD1;">'+(kb*10000).toLocaleString()+'</div><div class="ks">연간 '+(sumArr(D.kpi_b)*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:#FF9F43;"><div class="kl">매출 KPI (1~'+N+'월)</div><div class="kv" style="color:#FF9F43;">'+(kr*10000).toLocaleString()+'</div><div class="ks">연간 '+(sumArr(D.kpi_r)*10000).toLocaleString()+'</div></div>'+
     '<div class="card" style="--ac:#28C76F;"><div class="kl">취급고 달성률 (1~'+N+'월)</div><div class="kv" style="color:'+rc(br)+';">'+br+'%</div><div class="ks">'+(ab*10000).toLocaleString()+' / KPI '+(kb*10000).toLocaleString()+'</div></div>'+
     '<div class="card" style="--ac:'+rc(rr)+';"><div class="kl">매출 달성률 (1~'+N+'월)</div><div class="kv" style="color:'+rc(rr)+';">'+rr+'%</div><div class="ks">'+(ar*10000).toLocaleString()+' / KPI '+(kr*10000).toLocaleString()+'</div></div>';
   // 월별 차트
@@ -634,15 +643,10 @@ function buildTeam(tm){
   var acr=prds.map(function(p){return D.prods[p].act_r.slice(0,N).reduce(function(a,b){return a+b;},0);});
   var rtr=kpr.map(function(k,i){return k>0?pct(acr[i],k):null;});
   mkBL(tm+'-pr',prds,kpr,acr,rtr,'#FF9F43','#EA5455');
-  // 실적 테이블
-  document.getElementById(tm+'-tbl').innerHTML=Object.entries(D.prods).map(function(e){
-    var p=e[0],pd=e[1];
-    var kb2=pd.kpi_b.slice(0,6).reduce(function(a,b){return a+b;},0);
-    var ab2=pd.act_b.slice(0,6).reduce(function(a,b){return a+b;},0);
-    var kr2=pd.kpi_r.slice(0,6).reduce(function(a,b){return a+b;},0);
-    var ar2=pd.act_r.slice(0,6).reduce(function(a,b){return a+b;},0);
-    var rb=kb2>0?pct(ab2,kb2):0, rr2=kr2>0?pct(ar2,kr2):0;
-    return '<tr><td style="font-weight:500;">'+p+'</td><td>'+f0(kb2)+'만</td><td>'+f0(ab2)+'만</td><td style="color:'+rc(rb)+';">'+rb.toFixed(1)+'%</td><td>'+f0(kr2)+'만</td><td>'+f0(ar2)+'만</td><td style="color:'+rc(rr2)+';">'+rr2.toFixed(1)+'%</td></tr>';
+  // 실적 테이블 — 섹션 제목("상품별 실적 상세 (1~N월)")과 같은 기준월 N까지 합산.
+  // (예전에는 여기만 slice(0,6)이 박혀 있어 제목과 숫자가 어긋났다)
+  document.getElementById(tm+'-tbl').innerHTML=teamTableRows(D.prods,N).map(function(r){
+    return '<tr><td style="font-weight:500;">'+r.name+'</td><td>'+f0(r.kpi_b)+'만</td><td>'+f0(r.act_b)+'만</td><td style="color:'+rc(r.billRate)+';">'+r.billRate.toFixed(1)+'%</td><td>'+f0(r.kpi_r)+'만</td><td>'+f0(r.act_r)+'만</td><td style="color:'+rc(r.revRate)+';">'+r.revRate.toFixed(1)+'%</td></tr>';
   }).join('');
   // 상품별 탭
   selPM(tm, Object.keys(D.prods)[0]);
@@ -732,7 +736,6 @@ function renderAG(){
   }).join('');
   document.getElementById('ag-leg').innerHTML=agents.slice(0,8).map(function(e,i){return '<span><span class="lsq" style="background:'+PAL[i]+';"></span>'+e[0]+'</span>';}).join('');
   if(agMC) agMC.destroy();
-  if(agMC) agMC.destroy();
   agMC=new Chart(document.getElementById('ag-mc'),{
     type:'bar',
     data:{labels:M,datasets:agents.slice(0,8).map(function(e,i){return {label:e[0],data:e[1].monthly,backgroundColor:PAL[i],borderWidth:0};})},
@@ -766,16 +769,26 @@ function renderAG(){
 
 // ── 캠페인 ──
 var campM=null, campP=null;
-var MO=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 function buildCamp(){
-  var months=Object.keys(CD).sort(function(a,b){return MO.indexOf(a)-MO.indexOf(b);});
+  var months=Object.keys(CD).sort(function(a,b){return M.indexOf(a)-M.indexOf(b);});
   if(!campM) campM='전체';
   var mtabs='<button class="mb'+(campM==='전체'?' on':'')+'" data-m="전체" onclick="selCampM(this.dataset.m)">전체</button>';
   mtabs+=months.map(function(m){
     return '<button class="mb'+(m===campM?' on':'')+'" data-m="'+m+'" onclick="selCampM(this.dataset.m)">'+m+'</button>';
   }).join('');
   document.getElementById('camp-mtabs').innerHTML=mtabs;
-  var pl=campM&&CD[campM]?Object.keys(CD[campM]):[];
+  // "전체"는 CD에 실제 키가 없는 가상 월이라, 모든 월의 상품을 합쳐서 탭을 만든다.
+  // (예전에는 CD['전체']가 undefined라 상품 탭이 하나도 안 그려지고 "상품을
+  //  선택하세요"만 뜬 채로 아무것도 고를 수 없었다)
+  var pl;
+  if(campM==='전체'){
+    pl=[];
+    Object.keys(CD).forEach(function(mk){
+      Object.keys(CD[mk]).forEach(function(p){ if(pl.indexOf(p)<0) pl.push(p); });
+    });
+  } else {
+    pl=(campM&&CD[campM])?Object.keys(CD[campM]):[];
+  }
   if(!campP||pl.indexOf(campP)<0) campP=pl[0]||null;
   document.getElementById('camp-ptabs').innerHTML=pl.map(function(p){
     var c=AGC[p]||PC[p]||'#808390', on=p===campP;
@@ -824,94 +837,57 @@ function renderCamp(){
 }
 
 // ── KPI 데이터 탭 ──
+// 원본 표 HTML은 data.json이 아니라 별도 파일(raw-table.html)에 있다 — 100KB가
+// 넘고 이 탭을 열지 않는 사용자에게는 전혀 필요 없어서, 탭 첫 진입 때만 받는다.
 function buildRaw(){
-  document.getElementById('raw-wrap').innerHTML=DATA.rawTableHtml;
-
-}
-
-
-// ── 데이터 집계 (excludeFromBillTotal 플래그 기반) ──
-function sumArr(arr){return arr.reduce(function(a,b){return a+b;},0);}
-function computeTotal(products){
-  var kb=new Array(12).fill(0),kr=new Array(12).fill(0),ab=new Array(12).fill(0),ar=new Array(12).fill(0);
-  Object.values(products).forEach(function(p){
-    for(var i=0;i<12;i++){
-      kr[i]+=p.kpi_r[i]||0; ar[i]+=p.act_r[i]||0;
-      kb[i]+=p.kpi_b[i]||0;
-      if(!p.excludeFromBillTotal) ab[i]+=p.act_b[i]||0;
-    }
+  var host=document.getElementById('raw-wrap');
+  host.innerHTML='<div style="padding:1.1rem 1.2rem;font-size:11.5px;color:var(--tm);">원본 표를 불러오는 중…</div>';
+  fetch('raw-table.html',{cache:'no-store'}).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(html){
+    host.innerHTML=html;
+  }).catch(function(err){
+    window.rawDone=false; // 탭을 다시 누르면 재시도할 수 있게 되돌린다
+    host.innerHTML='<div style="padding:1.1rem 1.2rem;font-size:11.5px;color:var(--ts);line-height:1.6;">'+
+      '<b style="color:#EA5455;">원본 표를 불러오지 못했습니다 (raw-table.html)</b><br>'+
+      '탭을 다시 선택하면 재시도합니다. 계속 실패하면 관리자에게 문의해 주세요.<br>'+
+      '<span style="font-family:DM Mono,monospace;color:var(--tm);">'+String(err)+'</span></div>';
+    console.error('raw-table.html load failed', err);
   });
-  return {kpi_b:kb,kpi_r:kr,act_b:ab,act_r:ar,
-    kpi_b_h1:sumArr(kb.slice(0,6)),kpi_b_h2:sumArr(kb.slice(6,12)),kpi_b_ann:sumArr(kb),
-    kpi_r_h1:sumArr(kr.slice(0,6)),kpi_r_h2:sumArr(kr.slice(6,12)),kpi_r_ann:sumArr(kr)};
-}
-function computeTeam(products,team){
-  var kb=new Array(12).fill(0),kr=new Array(12).fill(0),ab=new Array(12).fill(0),ar=new Array(12).fill(0),prods={};
-  Object.entries(products).forEach(function(e){
-    var name=e[0],p=e[1];
-    if(p.team!==team) return;
-    prods[name]=p;
-    for(var i=0;i<12;i++){
-      kr[i]+=p.kpi_r[i]||0; ar[i]+=p.act_r[i]||0;
-      kb[i]+=p.kpi_b[i]||0;
-      if(!p.excludeFromBillTotal) ab[i]+=p.act_b[i]||0;
-    }
-  });
-  return {kpi_b:kb,kpi_r:kr,act_b:ab,act_r:ar,prods:prods};
 }
 
-// ── 주차별 비교 (Phase 4: snapshotHistory 최신 2개에서 자동 계산) ──
-function sumN(arr,n){return arr.slice(0,n).reduce(function(a,b){return a+b;},0);}
-function snapDateLabel(dateStr){
-  var dt=new Date(dateStr+'T00:00:00');
-  return (dt.getMonth()+1)+'/'+dt.getDate();
+// ── 데이터 품질 경고 배너 ──
+// sync.js가 남긴 dataQualityWarnings/dataQualityAnomalies가 있을 때만 노출한다.
+// (필드가 아예 없거나 빈 배열이면 아무것도 보이지 않아야 한다)
+function renderDataQuality(){
+  var el=document.getElementById('dq-banner');
+  if(!el) return;
+  var warns=(DATA&&DATA.dataQualityWarnings)||[];
+  var anos=(DATA&&DATA.dataQualityAnomalies)||[];
+  var w=warns.length||0, a=anos.length||0;
+  if(w+a===0){ el.style.display='none'; el.innerHTML=''; return; }
+  var parts=[];
+  if(w) parts.push('데이터 품질 경고 '+w+'건');
+  if(a) parts.push('이상치 '+a+'건');
+  el.innerHTML='<div class="box" style="margin-bottom:1.1rem;padding:.7rem .9rem;border-color:rgba(255,159,67,.4);background:rgba(255,159,67,.09);box-shadow:none;">'+
+    '<span aria-hidden="true">⚠</span> <b style="color:#9B5A12;font-size:12px;">'+parts.join(' · ')+'</b>'+
+    '<span style="font-size:11.5px;color:var(--ts);"> — 최근 동기화에서 확인이 필요한 항목이 감지됐습니다. 상세는 관리자에게 문의해 주세요.</span></div>';
+  el.style.display='block';
 }
-function latestTwoSnapshots(snapshotHistory){
-  var hist=(snapshotHistory||[]).slice().sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0);});
-  if(hist.length<2) return null;
-  return {prev:hist[hist.length-2], cur:hist[hist.length-1]};
-}
-function computeWeeklyComparison(snapshotHistory){
-  var pair=latestTwoSnapshots(snapshotHistory);
-  if(!pair) return {prev_label:'-',cur_label:'-',rows:[],note:'비교할 이전 스냅샷이 아직 없습니다. 동기화가 하루 이상 누적되면 표시됩니다.'};
-  var pt=computeTotal(pair.prev.products), ct=computeTotal(pair.cur.products);
-  var pb=sumN(pt.act_b,N), pk=sumN(pt.kpi_b,N), pr=sumN(pt.act_r,N), pkr=sumN(pt.kpi_r,N);
-  var cb=sumN(ct.act_b,N), ck=sumN(ct.kpi_b,N), cr=sumN(ct.act_r,N), ckr=sumN(ct.kpi_r,N);
-  return {
-    prev_label:snapDateLabel(pair.prev.date), cur_label:snapDateLabel(pair.cur.date),
-    rows:[
-      {label:'취급고 달성률', prev:pct(pb,pk), cur:pct(cb,ck), unit:'pct'},
-      {label:'매출 달성률', prev:pct(pr,pkr), cur:pct(cr,ckr), unit:'pct'},
-      {label:'누적 취급고', prev:Math.round(pb*10000), cur:Math.round(cb*10000), unit:'won'},
-      {label:'누적 매출', prev:Math.round(pr*10000), cur:Math.round(cr*10000), unit:'won'}
-    ]
-  };
-}
-function computeWeeklyProductChanges(snapshotHistory){
-  var pair=latestTwoSnapshots(snapshotHistory);
-  if(!pair) return {biz:[],mkt:[]};
-  var monthIdx=Math.max(0,N-1), monthLabel=M[monthIdx];
-  function changesFor(team){
-    var rows=[];
-    Object.keys(pair.cur.products).forEach(function(name){
-      var p=pair.cur.products[name];
-      var teamOf=p.team||(PRODS[name]&&PRODS[name].team);
-      if(teamOf!==team) return;
-      var prevP=pair.prev.products[name];
-      var prevVal=prevP?(prevP.act_b[monthIdx]||0):0;
-      var curVal=p.act_b[monthIdx]||0;
-      if(curVal===prevVal) return;
-      rows.push({name:name,month:monthLabel,kind:'취급고',prev:Math.round(prevVal*10000),cur:Math.round(curVal*10000)});
-    });
-    rows.sort(function(a,b){return Math.abs(b.cur-b.prev)-Math.abs(a.cur-a.prev);});
-    return rows;
-  }
-  return {biz:changesFor('biz'), mkt:changesFor('mkt')};
-}
+
+
+// ── 데이터 집계 / 주차별 비교 ──
+// computeTotal / computeTeam / teamTableRows / quarterSegmentProducts /
+// computeWeeklyComparison / computeWeeklyProductChanges 및 sumArr·sumN·pct
+// 헬퍼는 compute.js로 분리됨(브라우저 전역 + Node require 양쪽 지원).
+// 회귀 테스트: sync/test/compute.test.js
 
 function initDashboard(){
 // ── 초기화 ──
+applyChartDefaults();
 window.agDone=false; window.bizDone=false; window.mktDone=false; window.rawDone=false;
+renderDataQuality();
 buildKPICards();
 buildQBox();
 buildWeekMetrics();
@@ -953,33 +929,65 @@ function updateMonthRangeLabels(){
     if(el) el.textContent=map[id];
   });
 }
+// 로드 실패: 보여줄 게 아무것도 없으므로 본문 전체를 오류 화면으로 대체하고
+// 사이드바 탭도 비활성화한다.
+function showLoadError(err){
+  var host=document.querySelector('.wrap')||document.getElementById('app');
+  if(host) host.innerHTML='<div class="box" role="alert" style="border-color:rgba(234,84,85,.35);background:rgba(234,84,85,.06);">'+
+    '<div style="font-size:13px;font-weight:700;color:#EA5455;margin-bottom:.35rem;">데이터를 불러오지 못했습니다 (data.json)</div>'+
+    '<div style="font-size:11.5px;color:var(--ts);line-height:1.6;">잠시 후 새로고침하거나 관리자에게 문의해 주세요.<br><span style="font-family:DM Mono,monospace;color:var(--tm);">'+String(err)+'</span></div></div>';
+  document.querySelectorAll('.nb').forEach(function(b){b.disabled=true;b.style.opacity='.45';b.style.cursor='not-allowed';});
+  console.error('data.json load failed', err);
+}
+// 렌더링 실패: 데이터는 받았으나 화면을 만드는 중 오류. 이미 그려진 부분은
+// 살려두고(본문을 지우지 않는다) 상단에 경고만 덧붙인다.
+function showRenderError(err){
+  var host=document.querySelector('.wrap');
+  if(host) host.insertAdjacentHTML('afterbegin','<div class="box" role="alert" style="border-color:rgba(234,84,85,.35);background:rgba(234,84,85,.06);">'+
+    '<div style="font-size:13px;font-weight:700;color:#EA5455;margin-bottom:.35rem;">일부 데이터 표시 중 오류가 발생했습니다</div>'+
+    '<div style="font-size:11.5px;color:var(--ts);line-height:1.6;">화면 일부가 비어 있을 수 있습니다. 새로고침 후에도 같으면 관리자에게 문의해 주세요.<br><span style="font-family:DM Mono,monospace;color:var(--tm);">'+String(err)+'</span></div></div>');
+  console.error('dashboard render failed', err);
+}
+// defer된 Chart.js는 파싱이 끝난 뒤 실행되고, DOMContentLoaded는 그 이후에
+// 발생한다 → 여기서 기다리면 차트를 그릴 때 window.Chart가 반드시 존재한다.
+function whenScriptsReady(cb){
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',cb,{once:true});
+  else cb();
+}
+function applyData(d){
+  DATA=d;
+  PRODS=d.products;
+  TOTAL=computeTotal(d.products);
+  BIZ=computeTeam(d.products,'biz');
+  MKT=computeTeam(d.products,'mkt');
+  TKPIB=TOTAL.kpi_b; TKPIR=TOTAL.kpi_r; TACTB=TOTAL.act_b; TACTR=TOTAL.act_r;
+  TQKPI=d.quarterlyOverall.kpiWon; TQACT=d.quarterlyOverall.actWon;
+  STELLA=d.stellaH1BillOverride;
+  // 매월 1일이 되면 자동으로 "1~N월" 기준이 다음 달로 넘어가도록 현재 달력
+  // 날짜에서 직접 계산한다(data.json의 monthsElapsed 값에 더 이상 의존하지
+  // 않음 — 수동으로 매달 갱신해줄 필요가 없어짐).
+  N=Math.min(12, new Date().getMonth()+1);
+  AG=d.agencyRevenue; CD=d.campaignDetails;
+  WEEKCMP=computeWeeklyComparison(d.snapshotHistory,N);
+  WEEKPROD=computeWeeklyProductChanges(d.snapshotHistory,N,PRODS);
+}
 function loadDashboard(){
-  fetch('data.json').then(function(r){return r.json();}).then(function(d){
-    DATA=d;
-    PRODS=d.products;
-    TOTAL=computeTotal(d.products);
-    BIZ=computeTeam(d.products,'biz');
-    MKT=computeTeam(d.products,'mkt');
-    TKPIB=TOTAL.kpi_b; TKPIR=TOTAL.kpi_r; TACTB=TOTAL.act_b; TACTR=TOTAL.act_r;
-    TQKPI=d.quarterlyOverall.kpiWon; TQACT=d.quarterlyOverall.actWon;
-    STELLA=d.stellaH1BillOverride;
-    // 매월 1일이 되면 자동으로 "1~N월" 기준이 다음 달로 넘어가도록 현재 달력
-    // 날짜에서 직접 계산한다(data.json의 monthsElapsed 값에 더 이상 의존하지
-    // 않음 — 수동으로 매달 갱신해줄 필요가 없어짐).
-    N=Math.min(12, new Date().getMonth()+1);
-    AG=d.agencyRevenue; CD=d.campaignDetails;
-    WEEKCMP=computeWeeklyComparison(d.snapshotHistory);
-    WEEKPROD=computeWeeklyProductChanges(d.snapshotHistory);
-    renderUpdatedAt();
-    updateMonthRangeLabels();
-    initDashboard();
-  }).catch(function(err){
-    var host=document.querySelector('.wrap')||document.getElementById('app');
-    host.innerHTML='<div class="box" style="border-color:rgba(234,84,85,.35);background:rgba(234,84,85,.06);">'+
-      '<div style="font-size:13px;font-weight:700;color:#EA5455;margin-bottom:.35rem;">데이터를 불러오지 못했습니다 (data.json)</div>'+
-      '<div style="font-size:11.5px;color:var(--ts);line-height:1.6;">잠시 후 새로고침하거나 관리자에게 문의해 주세요.<br><span style="font-family:DM Mono,monospace;color:var(--tm);">'+String(err)+'</span></div></div>';
-    console.error('data.json load failed', err);
-  });
+  // no-store: 시간당~실시간으로 갱신되는 파일이라 브라우저 캐시의 낡은 값이
+  // 그대로 보이면 안 된다.
+  fetch('data.json',{cache:'no-store'}).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' '+r.statusText);
+    return r.json();
+  }).then(function(d){
+    // 데이터 수신은 성공 — 여기서부터의 실패는 "표시" 문제라 메시지를 구분한다.
+    whenScriptsReady(function(){
+      try{
+        applyData(d);
+        renderUpdatedAt();
+        updateMonthRangeLabels();
+        initDashboard();
+      }catch(e){ showRenderError(e); }
+    });
+  }).catch(showLoadError);
 }
 
 // ── 접근 제어 ──

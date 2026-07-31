@@ -10,8 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   business data is hardcoded in this file anymore.
 - [data.json](data.json) — all business data: `products` (per-product monthly
   arrays + `team` + `excludeFromBillTotal`), `agencyRevenue`, `campaignDetails`,
-  `weeklyComparison`/`weeklyProductChanges`, `rawTableHtml` (verbatim KPI-원본-탭
-  HTML), and `snapshotHistory`.
+  and `snapshotHistory`. (The KPI-원본-탭 HTML used to live here as
+  `rawTableHtml`; it was 78% of the file and is now the separate
+  [raw-table.html](raw-table.html), fetched lazily — see the Data model
+  section.)
 - No build step, no package.json — it's static HTML/JS/JSON served as-is. To run
   locally: `npx serve .` (or any static file server) and open the served URL —
   `fetch('data.json')` requires http(s), not `file://`. `.claude/launch.json` has
@@ -19,10 +21,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Phase 2 (Sync Job) is built.** See [sync/](sync) — `sync.js` fetches the
 "미디어사업실_전체" sheet via the Google Sheets API, validates its structure,
-and overwrites `data.json`'s `products`/`rawTableHtml`/`quarterlyOverall`/
-`updatedAt`/`snapshotHistory` (agencies and campaigns are carried over
-untouched — see Phase 4 note on why `weeklyComparison`/`weeklyProductChanges`
-no longer exist as data.json fields at all).
+and overwrites `data.json`'s `products`/`quarterlyOverall`/`updatedAt`/
+`dataQualityWarnings`/`dataQualityAnomalies`/`snapshotHistory` plus the
+separate [raw-table.html](raw-table.html) file (agencies and campaigns are
+carried over untouched — see Phase 4 note on why `weeklyComparison`/
+`weeklyProductChanges` no longer exist as data.json fields at all, and
+business-rules.md §7 for the full "sync가 갱신하는 필드 / 안 하는 필드" list).
+It writes **nothing at all** when the sheet produced no material change (see
+[sync/detectChanges.js](sync/detectChanges.js)) — `updatedAt` only moves when
+something a reader could notice moved, so an unchanged sheet produces no
+commit and no Pages redeploy.
 **The `GOOGLE_SERVICE_ACCOUNT_JSON`/`GOOGLE_SHEET_ID` repo secrets are still
 not set**, so both the cron and the Phase 4 webhook trigger will keep failing
 at the "fetch from Sheets API" step until someone provisions a service
@@ -187,12 +195,17 @@ codebase.
 
 - **취급고 총계 제외 규칙**: products with `excludeFromBillTotal: true` in
   `data.json` (currently `용역`, `다윈`) are skipped when [index.html](index.html)'s
-  `computeTotal()`/`computeTeam()` sum `act_b`/`kpi_b` for the overall and
-  team-level cards/charts. Their real numbers still show in per-product tables
-  (e.g. 미디어사업팀 tab's "상품별 실적 상세") and in `rawTableHtml` — only the
-  *aggregate* excludes them. `kpi_r`/`act_r` (매출) are never excluded, only
-  `kpi_b`/`act_b` (취급고). Don't reintroduce a hardcoded product-name check
-  anywhere — always branch on the flag.
+  `computeTotal()`/`computeTeam()` sum the overall and team-level 취급고
+  **실적**. Their real numbers still show in per-product tables (e.g.
+  미디어사업팀 tab's "상품별 실적 상세") and in the raw KPI table — only the
+  *aggregate* excludes them.
+  Precisely: **`act_b`(취급고 실적)만 제외되고 `kpi_b`(취급고 KPI 목표)는 제외
+  상품까지 포함해 전부 합산됩니다** — 제외 상품은 현재 취급고 KPI가 애초에 0이라
+  결과적으로 차이가 없지만, 나중에 그 상품에 취급고 KPI가 잡히면 달성률의 분모만
+  부풀 수 있으니 유의하세요. `sync/parseSheet.js`의 시트 총계 교차검증
+  (`computedKpiB`)도 같은 규칙(제외 상품 포함)으로 맞춰져 있습니다.
+  `kpi_r`/`act_r` (매출) is never excluded. Don't reintroduce a hardcoded
+  product-name check anywhere — always branch on the flag.
 - Sheet label text is fragile and has changed before without notice (e.g.
   "취급고" → "취급고(인식x)"). [sync/parseSheet.js](sync/parseSheet.js) validates
   section headers, per-product row-label sequences, and cross-checks
@@ -221,13 +234,25 @@ original export), `quarterlyOverall` (`kpiWon`/`actWon` — a separately
 sourced quarterly figure, not derivable from the monthly arrays, kept opaque),
 `products` (per-product `team`, monthly `kpi_b`/`kpi_r`/`act_b`/`act_r`, precomputed
 `bill`/`rev` percentage arrays, `excludeFromBillTotal`), `agencyRevenue`,
-`campaignDetails`, `rawTableHtml`, `snapshotHistory`. There is **no**
+`campaignDetails`, `dataQualityWarnings`, `dataQualityAnomalies`,
+`snapshotHistory`. There is **no**
 `weeklyComparison`/`weeklyProductChanges` field anymore (Phase 4 — see
 above); don't reintroduce it as a stored field, it's derived data now.
 
+There is also **no `rawTableHtml` field anymore** — the "KPI 데이터" tab's
+prerendered table lives in its own file, [raw-table.html](raw-table.html)
+(plain HTML, not JSON-wrapped), which the frontend fetches lazily when that
+tab is first opened. It was ~117KB of a ~151KB data.json, i.e. every visitor
+downloaded it up front to render tabs that never used it. `sync.js` writes
+that file directly and `pages-deploy.yml` publishes it alongside
+`data.json`; don't fold it back into the JSON.
+
 `snapshotHistory` accumulates automatically as of Phase 4
 ([sync/mergeSnapshot.js](sync/mergeSnapshot.js), one entry per Asia/Seoul
-calendar date). It currently has 4 manually-seeded historical dates from
+calendar date), capped at `RETENTION_DAYS = 90` days of history (older
+entries are pruned on each sync, but never below `MIN_KEPT_ENTRIES = 2` so
+the "주차별 비교" view always has two points to compare even after a long
+sync outage). It currently has 4 manually-seeded historical dates from
 before that: 2026-07-16, 07-23, 07-24, 07-31 (each `{date, products}` —
 products keyed by name with `team`/`kpi_b`/`kpi_r`/`act_b`/`act_r`/
 `excludeFromBillTotal`). **2026-07-30 is still missing** from that

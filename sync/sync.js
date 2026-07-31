@@ -13,6 +13,19 @@
 // (missing section, garbled row order, non-numeric cell, sheet-vs-product
 // total mismatch) throws before any write happens, so a bad sync leaves the
 // previous data.json exactly as it was.
+//
+// SCOPE — this job only reads the "미디어사업실_전체" tab. It updates
+// products / quarterlyOverall / dataQualityWarnings / dataQualityAnomalies /
+// snapshotHistory / updatedAt and rewrites raw-table.html. It does NOT touch
+// agencyRevenue, campaignDetails, legacy, stellaH1BillOverride or
+// monthsElapsed — those live on other sheet tabs (or are Phase 1 leftovers)
+// and are carried over verbatim, so they can be older than the header's
+// "마지막 업데이트" timestamp suggests. See business-rules.md §7.
+//
+// Outputs are split in two: data.json (the data the dashboard computes from)
+// and raw-table.html (the "KPI 데이터" tab's prerendered table, ~117KB —
+// 78% of the old data.json — which the frontend only fetches when that tab
+// is opened). Do not fold the HTML back into data.json.
 
 const fs = require('fs');
 const path = require('path');
@@ -21,11 +34,13 @@ const { parseSheet, SheetStructureError, padRow } = require('./parseSheet');
 const { renderRawTable } = require('./renderRawTable');
 const { appendSnapshot } = require('./mergeSnapshot');
 const { detectAnomalies } = require('./detectAnomalies');
+const { detectChanges } = require('./detectChanges');
 const { notifyAnomalies } = require('./notify');
 
 const SHEET_NAME = '미디어사업실_전체';
 const RANGE = `${SHEET_NAME}!A1:S120`;
 const DATA_JSON_PATH = path.join(__dirname, '..', 'data.json');
+const RAW_TABLE_PATH = path.join(__dirname, '..', 'raw-table.html');
 
 function ghWarning(msg) {
   console.log(`::warning::${msg}`);
@@ -100,15 +115,14 @@ async function main() {
   const existing = JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8'));
 
   const newSnapshotHistory = appendSnapshot(existing.snapshotHistory, result.products);
+  const rawHtml = renderRawTable(rows.map(padRow));
 
-  const updated = Object.assign({}, existing, {
-    updatedAt: new Date().toISOString(),
+  const candidate = Object.assign({}, existing, {
     products: result.products,
     quarterlyOverall: {
       kpiWon: result.totalsCheck.totals.totalKpiR,
       actWon: result.totalsCheck.totals.totalActR
     },
-    rawTableHtml: renderRawTable(rows.map(padRow)),
     dataQualityWarnings: result.warnings,
     dataQualityAnomalies: anomalies,
     snapshotHistory: newSnapshotHistory
@@ -117,15 +131,41 @@ async function main() {
   // from the two most recent snapshotHistory entries (see
   // computeWeeklyComparison/computeWeeklyProductChanges in index.html) —
   // the sync job no longer owns or writes these fields.
-  delete updated.weeklyComparison;
-  delete updated.weeklyProductChanges;
+  delete candidate.weeklyComparison;
+  delete candidate.weeklyProductChanges;
+  // The "KPI 데이터" tab's HTML now lives in raw-table.html, not in data.json.
+  delete candidate.rawTableHtml;
 
-  fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(updated), 'utf8');
+  const existingRawHtml = fs.existsSync(RAW_TABLE_PATH)
+    ? fs.readFileSync(RAW_TABLE_PATH, 'utf8')
+    : null;
+  const { changed, reasons } = detectChanges(existing, candidate, {
+    existingRawHtml,
+    newRawHtml: rawHtml
+  });
+
+  if (!changed) {
+    // Nothing material moved: leave both files untouched (mtime included) so
+    // sync.yml's `git diff --quiet` guard actually short-circuits and no
+    // pointless commit/Pages redeploy happens. Anomaly notifications are
+    // skipped too — an identical anomaly set was already reported by the run
+    // that first produced it, and re-sending it every hour is just noise.
+    console.log(
+      `변경 없음 — data.json/raw-table.html을 쓰지 않고 종료합니다 ` +
+      `(products: ${Object.keys(result.products).length}, anomalies: ${anomalies.length}).`
+    );
+    return;
+  }
+
+  candidate.updatedAt = new Date().toISOString();
+  fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(candidate), 'utf8');
+  fs.writeFileSync(RAW_TABLE_PATH, rawHtml, 'utf8');
   console.log(
-    `data.json 갱신 완료 (products: ${Object.keys(result.products).length}, ` +
+    `data.json/raw-table.html 갱신 완료 (products: ${Object.keys(result.products).length}, ` +
     `warnings: ${result.warnings.length}, anomalies: ${anomalies.length}, ` +
     `snapshotHistory: ${newSnapshotHistory.length}개)`
   );
+  for (const r of reasons) console.log(`  변경 사유: ${r}`);
 
   // 이상치 알림은 data.json 갱신이 끝난 뒤에 시도한다 — 알림 전송이 실패하더라도
   // (예: Slack webhook 일시 장애) 이미 성공한 동기화 자체를 실패로 만들지 않기 위함.

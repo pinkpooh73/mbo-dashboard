@@ -37,8 +37,15 @@ jobs:
       - name: Assemble published site
         run: |
           mkdir -p _site
-          cp index.html data.json _site/
+          cp index.html compute.js data.json raw-table.html _site/
           cp -r assets _site/
+          # compute.js holds the dashboard's aggregate calculations (split out
+          # of index.html so Node tests can require it) — index.html loads it
+          # with a plain <script src>, so it must ship or the page is blank.
+          # raw-table.html is the "KPI 데이터" tab's prerendered table, split
+          # out of data.json (it was 78% of its size) — index.html fetches it
+          # lazily when that tab is first opened, so it must be published
+          # alongside data.json or that tab breaks.
           # index.html references assets/ (login-gate CI logo). Fonts/Chart.js
           # are loaded from CDNs by index.html itself, so nothing else is
           # required. Deliberately NOT publishing sync/, PRD docs, or
