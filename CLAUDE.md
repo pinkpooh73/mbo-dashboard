@@ -17,24 +17,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   `fetch('data.json')` requires http(s), not `file://`. `.claude/launch.json` has
   a `static-server` config for the browser preview tool.
 
-**Phase 2 (Sync Job) is built but not yet wired to real infrastructure.** See
-[sync/](sync) — `sync.js` fetches the "미디어사업실_전체" sheet via the Google
-Sheets API, validates its structure, and overwrites `data.json`'s `products`/
-`rawTableHtml`/`quarterlyOverall`/`updatedAt` (everything else — agencies,
-campaigns, weeklyComparison, snapshotHistory — is carried over untouched).
+**Phase 2 (Sync Job) is built.** See [sync/](sync) — `sync.js` fetches the
+"미디어사업실_전체" sheet via the Google Sheets API, validates its structure,
+and overwrites `data.json`'s `products`/`rawTableHtml`/`quarterlyOverall`/
+`updatedAt` (everything else — agencies, campaigns, weeklyComparison,
+snapshotHistory — is carried over untouched).
 [.github/workflows/sync.yml](.github/workflows/sync.yml) runs it hourly via
-`cron` plus `workflow_dispatch` for manual runs. **This repo is not a git repo
-yet and has no GitHub remote**, so the workflow has never actually executed —
-someone needs to `git init`, push to a GitHub repo, and set the
-`GOOGLE_SERVICE_ACCOUNT_JSON`/`GOOGLE_SHEET_ID` repo secrets before the cron
-does anything. All parsing/validation logic is verified independently of that
-via `sync/test/` (`cd sync && npm test`), which runs against a real captured
-sheet export, not live credentials — see that directory's tests for exactly
-what's proven vs. what still needs a live run to confirm.
+`cron` plus `workflow_dispatch` for manual runs. **The `GOOGLE_SERVICE_ACCOUNT_JSON`/
+`GOOGLE_SHEET_ID` repo secrets are not set yet**, so the cron will fail until
+someone provisions a service account, shares the sheet with it, and adds
+those two secrets in the repo's Settings → Secrets. Parsing/validation logic
+is proven independently of that via `sync/test/` (`cd sync && npm test`),
+which runs against a real captured sheet export, not live credentials.
 
-There is still no deploy pipeline and no login gate — that's Phase 3. See
-[PRD_미디어사업실_매출관리_대시보드_5Phase_ClaudeCode.md](PRD_미디어사업실_매출관리_대시보드_5Phase_ClaudeCode.md)
-(the authoritative, Phase-numbered PRD) for what's next; the older
+**Phase 3 (login gate + CI/CD deploy) is done and live.**
+- Repo: https://github.com/pinkpooh73/mbo-dashboard (**public** — see note below)
+- Live URL: https://pinkpooh73.github.io/mbo-dashboard/ (password: see PRD §4.4 —
+  not repeated here since this file may end up published; ask the user or check
+  the PRD's private copy)
+- [.github/workflows/pages-deploy.yml](.github/workflows/pages-deploy.yml)
+  deploys `index.html`+`data.json` only (not the PRDs, `sync/`, or this file)
+  to Pages on every push to `main`, and also on `workflow_run` completion of
+  `sync.yml` — a plain `push` trigger alone would miss sync-job commits, since
+  GitHub suppresses `push`-triggered workflows for commits made with the
+  default `GITHUB_TOKEN` (loop prevention).
+- **The repo is public, not private.** It was created private first, but this
+  GitHub account's plan does not support Pages on private repos (HTTP 422) —
+  confirmed live, not assumed. The user chose to switch to public rather than
+  upgrade plans. This means the source (including PRDs and `sync/` logic) is
+  publicly readable on GitHub; only the *deployed Pages site* is scoped to
+  just `index.html`+`data.json` via the workflow's explicit file copy step.
+  The password gate is still what's documented in PRD §4.4 as a
+  known-weak, view-source-defeatable measure — this didn't change that
+  tradeoff, it's an orthogonal repo-visibility issue.
+- The login gate (`#gate` in index.html) defers `fetch('data.json')` until
+  after a correct password is entered, and persists via
+  `localStorage['mbo_dashboard_auth']` so revisits skip it. It does **not**
+  protect `data.json` itself from someone who fetches the URL directly —
+  this is the exact limitation PRD §4.4/§8 already documents and accepts for
+  now.
+- Browser/CDN caching note: after a deploy, `fetch('data.json')` from an
+  already-open tab may briefly serve a cached copy. The workflow's own deploy
+  is verified immediate (checked via `fetch(url, {cache:'no-store'})` against
+  the live URL) — this is client-side cache staleness, not a pipeline
+  problem. Not addressed yet; a cache-busting query param is a cheap future
+  fix if it matters in practice.
+
+See [PRD_미디어사업실_매출관리_대시보드_5Phase_ClaudeCode.md](PRD_미디어사업실_매출관리_대시보드_5Phase_ClaudeCode.md)
+(the authoritative, Phase-numbered PRD) for what's next (Phase 4/5); the older
 [PRD_미디어사업실_매출관리_대시보드_고도화.md](PRD_미디어사업실_매출관리_대시보드_고도화.md)
 is the original draft it superseded — prefer the 5-Phase doc when the two differ.
 
