@@ -48,9 +48,17 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          # Phase 5 — optional: if unset, detected anomalies still show up as
-          # ::warning:: annotations on the run (see sync/notify.js), just no
-          # Slack message gets sent.
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          ALERT_EMAIL_TO: ${{ vars.ALERT_EMAIL_TO }}
+          # Phase 5 — every var above is optional per-channel: if a channel's
+          # config is incomplete, that channel is skipped (::warning:: only,
+          # see sync/notify.js) without blocking the sync or the other
+          # channel. ALERT_EMAIL_TO is a plain repo variable, not a secret —
+          # an email address isn't sensitive on its own.
         run: node sync.js
         # A structural validation failure (SheetStructureError) or a fetch
         # failure exits non-zero here, which fails this step *before* any

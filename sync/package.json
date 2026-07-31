@@ -9,6 +9,7 @@
     "test": "node --test"
   },
   "dependencies": {
-    "google-auth-library": "^9.14.1"
+    "google-auth-library": "^9.14.1",
+    "nodemailer": "^9.0.3"
   }
 }

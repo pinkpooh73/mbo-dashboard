@@ -1,35 +1,21 @@
 'use strict';
-// Sends a Slack notification when detectAnomalies() finds something.
-// SLACK_WEBHOOK_URL comes from a GitHub Actions secret — never hardcode it
-// (see sync.yml). If the secret isn't set, this just logs and no-ops, so a
-// missing webhook never breaks the sync itself.
+// Fans out an anomaly alert to every configured channel (Slack, email).
+// Each channel is independently optional — missing config for one channel
+// just skips that channel (logged as a ::warning::) and never blocks the
+// other, and never fails the sync itself (see sync.js's try/catch around
+// the call site).
+
+const { sendSlackAlert } = require('./notifySlack');
+const { sendEmailAlert } = require('./notifyEmail');
 
 async function notifyAnomalies(anomalies, context) {
-  if (!anomalies || anomalies.length === 0) return { sent: false, reason: 'no-anomalies' };
+  if (!anomalies || anomalies.length === 0) return { slack: { sent: false, reason: 'no-anomalies' }, email: { sent: false, reason: 'no-anomalies' } };
 
-  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-  if (!webhookUrl) {
-    console.log(`::warning::${anomalies.length}건의 이상치가 감지됐지만 SLACK_WEBHOOK_URL이 설정되지 않아 알림을 보내지 않았습니다.`);
-    return { sent: false, reason: 'no-webhook' };
-  }
-
-  const lines = anomalies.map((a) => `• ${a.detail}`);
-  const header = `⚠️ *미디어사업실 대시보드 데이터 이상치 감지* (${anomalies.length}건)`;
-  const footer = context && context.sheetUrl ? `\n<${context.sheetUrl}|시트 열기>` : '';
-  const text = `${header}\n${lines.join('\n')}${footer}`;
-
-  const res = await fetch(webhookUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text })
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    console.log(`::warning::Slack 알림 전송 실패 (HTTP ${res.status}): ${body.slice(0, 300)}`);
-    return { sent: false, reason: 'http-error', status: res.status };
-  }
-  console.log(`Slack 알림 전송 완료 (${anomalies.length}건).`);
-  return { sent: true };
+  const [slack, email] = await Promise.all([
+    sendSlackAlert(anomalies, context).catch((e) => ({ sent: false, reason: 'error', error: e.message })),
+    sendEmailAlert(anomalies, context).catch((e) => ({ sent: false, reason: 'error', error: e.message }))
+  ]);
+  return { slack, email };
 }
 
 module.exports = { notifyAnomalies };
