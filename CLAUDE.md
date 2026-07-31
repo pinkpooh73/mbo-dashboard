@@ -20,15 +20,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Phase 2 (Sync Job) is built.** See [sync/](sync) — `sync.js` fetches the
 "미디어사업실_전체" sheet via the Google Sheets API, validates its structure,
 and overwrites `data.json`'s `products`/`rawTableHtml`/`quarterlyOverall`/
-`updatedAt` (everything else — agencies, campaigns, weeklyComparison,
-snapshotHistory — is carried over untouched).
-[.github/workflows/sync.yml](.github/workflows/sync.yml) runs it hourly via
-`cron` plus `workflow_dispatch` for manual runs. **The `GOOGLE_SERVICE_ACCOUNT_JSON`/
-`GOOGLE_SHEET_ID` repo secrets are not set yet**, so the cron will fail until
-someone provisions a service account, shares the sheet with it, and adds
-those two secrets in the repo's Settings → Secrets. Parsing/validation logic
-is proven independently of that via `sync/test/` (`cd sync && npm test`),
-which runs against a real captured sheet export, not live credentials.
+`updatedAt`/`snapshotHistory` (agencies and campaigns are carried over
+untouched — see Phase 4 note on why `weeklyComparison`/`weeklyProductChanges`
+no longer exist as data.json fields at all).
+**The `GOOGLE_SERVICE_ACCOUNT_JSON`/`GOOGLE_SHEET_ID` repo secrets are still
+not set**, so both the cron and the Phase 4 webhook trigger will keep failing
+at the "fetch from Sheets API" step until someone provisions a service
+account, shares the sheet with it, and adds those two secrets in the repo's
+Settings → Secrets. Parsing/validation logic is proven independently of that
+via `sync/test/` (`cd sync && npm test`), which runs against a real captured
+sheet export, not live credentials.
 
 **Phase 3 (login gate + CI/CD deploy) is done and live.**
 - Repo: https://github.com/pinkpooh73/mbo-dashboard (**public** — see note below)
@@ -36,8 +37,8 @@ which runs against a real captured sheet export, not live credentials.
   not repeated here since this file may end up published; ask the user or check
   the PRD's private copy)
 - [.github/workflows/pages-deploy.yml](.github/workflows/pages-deploy.yml)
-  deploys `index.html`+`data.json` only (not the PRDs, `sync/`, or this file)
-  to Pages on every push to `main`, and also on `workflow_run` completion of
+  deploys `index.html`+`data.json`+`assets/` only (not the PRDs, `sync/`, or
+  this file) to Pages on every push to `main`, and also on `workflow_run` completion of
   `sync.yml` — a plain `push` trigger alone would miss sync-job commits, since
   GitHub suppresses `push`-triggered workflows for commits made with the
   default `GITHUB_TOKEN` (loop prevention).
@@ -63,8 +64,41 @@ which runs against a real captured sheet export, not live credentials.
   problem. Not addressed yet; a cache-busting query param is a cheap future
   fix if it matters in practice.
 
+**Phase 4 (near-real-time sync + auto snapshot history) is built.**
+- [sync/apps-script/onEditTrigger.gs](sync/apps-script/onEditTrigger.gs): code
+  to paste into the Google Sheet's Apps Script editor. Debounces `onEdit`
+  bursts (30s) then POSTs a `repository_dispatch` (`sheet-edited`) to GitHub.
+  **Not attached to the live sheet yet** — this repo has no Google
+  credentials/sheet access, so a human has to do the Apps Script setup (see
+  the chat report for the walkthrough); the GitHub-side half of the pipeline
+  (dispatch → workflow run) is verified for real, though — an actual
+  `repository_dispatch` fired at the repo landed a new Actions run within ~3
+  seconds.
+- `sync.yml` keeps the hourly cron as a fallback alongside the new
+  `repository_dispatch` trigger — deliberately not replaced. Reasoning: if
+  the Apps Script trigger silently stops firing (Google account
+  reauthorization needed, trigger quota, someone deletes the trigger), the
+  dashboard would otherwise go stale with no visible symptom. Worst case with
+  both paths is the old 1h staleness; best case is under a minute.
+- `sync/mergeSnapshot.js`: `sync.js` now appends the freshly-synced products
+  into `data.json.snapshotHistory` on every successful run, keyed by
+  Asia/Seoul calendar date — **at most one entry per day** (same-day resyncs
+  overwrite that day's entry in place). This matters now that syncs can
+  happen many times a day: appending unconditionally would make "주차별"
+  comparisons meaningless (comparing two syncs a minute apart) and grow
+  `data.json` unbounded.
+- [index.html](index.html)'s `computeWeeklyComparison()`/
+  `computeWeeklyProductChanges()` derive "주차별 핵심 지표 비교" /
+  "상품별 주요 변동" from the two most recent `snapshotHistory` entries at
+  render time — `data.json` no longer has `weeklyComparison`/
+  `weeklyProductChanges` fields, and nothing hand-curates them anymore. The
+  product-change list is *every* product whose current-month `act_b` moved
+  between the two snapshots, sorted by |delta| descending, not a fixed
+  top-N — verified this exactly reproduces the old hand-curated 7/24→7/31
+  list (same products, same order) before removing the manual data.
+
 See [PRD_미디어사업실_매출관리_대시보드_5Phase_ClaudeCode.md](PRD_미디어사업실_매출관리_대시보드_5Phase_ClaudeCode.md)
-(the authoritative, Phase-numbered PRD) for what's next (Phase 4/5); the older
+(the authoritative, Phase-numbered PRD) for what's next (Phase 5); the older
 [PRD_미디어사업실_매출관리_대시보드_고도화.md](PRD_미디어사업실_매출관리_대시보드_고도화.md)
 is the original draft it superseded — prefer the 5-Phase doc when the two differ.
 
@@ -96,15 +130,20 @@ codebase.
 ```
 
 - **Sync Job**: reads the Google Sheet ("2026년_미디어사업실 매출 관리_v2.0") via the
-  Sheets API, normalizes rows into JSON. Starts as hourly polling (simplest, low API
-  load); may later move to an Apps Script `onEdit` webhook for near-real-time updates.
+  Sheets API, normalizes rows into JSON. Runs on an hourly cron (fallback) plus
+  a `repository_dispatch` fired by an Apps Script `onEdit` trigger (Phase 4)
+  for near-real-time updates.
 - **Data Store**: normalized current data + accumulated historical snapshots, stored
-  as committed JSON (DB migration is a non-goal for now).
+  as committed JSON (DB migration is a non-goal for now). `snapshotHistory` accumulates
+  automatically now (Phase 4) — one entry per calendar date, no manual curation.
 - **Frontend**: fetches JSON at runtime instead of embedding data in JS constants.
   Must preserve all existing tabs/views (see PRD §4.1): KPI 달성현황, 팀별 실적
   (미디어사업팀/미디어마케팅팀), 대행사별 매출, 월별 캠페인, KPI 데이터 (raw sheet
-  view with conditional formatting), 주차별 비교, and the existing pastel design
-  system.
+  view with conditional formatting), 주차별 비교. The visual design system was
+  intentionally overhauled in a later session (Vuexy-inspired sidebar layout) —
+  "preserve the existing design" no longer means the original Phase 1 pastel
+  look, it means whatever's currently in `index.html`; functionality/data
+  bindings are what must stay intact across restyles, not specific colors/layout.
 - **CI/CD**: GitHub Actions builds/deploys to GitHub Pages on every push to data or
   code (decided in PRD §10 — not an open question).
 - **Access control**: a client-side password gate (PRD §4.4). This is explicitly a
@@ -143,32 +182,37 @@ codebase.
 
 ## Data model
 
-`data.json` top level: `updatedAt`, `sourceSheetVersion`, `monthsElapsed` (N —
-how many months of actuals exist so far this year; drives the "1~N월" cards),
-`stellaH1BillOverride` (Stellaize's fixed H1 취급고 진행률, sourced from a sheet
-cell rather than computed), `legacy` (unused `bRate`/`rRate` kept for fidelity
-with the original export), `quarterlyOverall` (`kpiWon`/`actWon` — a separately
+`data.json` top level: `updatedAt`, `sourceSheetVersion`, `monthsElapsed`
+(legacy/unused since Phase 4 — `index.html` now computes N itself from the
+current calendar date instead of reading this field), `stellaH1BillOverride`
+(Stellaize's fixed H1 취급고 진행률, sourced from a sheet cell rather than
+computed), `legacy` (unused `bRate`/`rRate` kept for fidelity with the
+original export), `quarterlyOverall` (`kpiWon`/`actWon` — a separately
 sourced quarterly figure, not derivable from the monthly arrays, kept opaque),
 `products` (per-product `team`, monthly `kpi_b`/`kpi_r`/`act_b`/`act_r`, precomputed
 `bill`/`rev` percentage arrays, `excludeFromBillTotal`), `agencyRevenue`,
-`campaignDetails`, `weeklyComparison`/`weeklyProductChanges` (the current
-"주차별 비교" tab's data — still hand-curated, not auto-derived from
-`snapshotHistory`; see below), `rawTableHtml`, `snapshotHistory`.
+`campaignDetails`, `rawTableHtml`, `snapshotHistory`. There is **no**
+`weeklyComparison`/`weeklyProductChanges` field anymore (Phase 4 — see
+above); don't reintroduce it as a stored field, it's derived data now.
 
-`snapshotHistory` currently has 4 of the 5 intended dates: 2026-07-16, 07-23,
-07-24, 07-31 (each `{date, totals, products}`, extracted verbatim from that
-date's dashboard export). **2026-07-30 is missing** — no source file matching
-that date's `WEEKCMP.cur_label` was found among the historical dashboard
-exports; a file named with that date turned out to still be a 7/24 snapshot
-internally. Get the real 7/30 figures from the user before fabricating an
-entry — don't guess to fill the gap.
+`snapshotHistory` accumulates automatically as of Phase 4
+([sync/mergeSnapshot.js](sync/mergeSnapshot.js), one entry per Asia/Seoul
+calendar date). It currently has 4 manually-seeded historical dates from
+before that: 2026-07-16, 07-23, 07-24, 07-31 (each `{date, products}` —
+products keyed by name with `team`/`kpi_b`/`kpi_r`/`act_b`/`act_r`/
+`excludeFromBillTotal`). **2026-07-30 is still missing** from that
+manually-seeded set — no source file matching that date was ever found among
+the historical dashboard exports (see git history for the Phase 1
+investigation) — but this no longer blocks anything going forward; every
+sync fills in the next date on its own now.
 
-`weeklyComparison`/`weeklyProductChanges` are **not** auto-computed from
-`snapshotHistory` — the original dashboard's "상품별 주요 변동" list is a
-manually curated subset (not "top-N by delta"), so Phase 1 kept it as
-pre-baked data to avoid silently changing what's shown. Wiring the weekly
-comparison tab to auto-diff the two most recent `snapshotHistory` entries is
-Phase 4/5 work, once there's an actual diff-selection algorithm to implement.
+"주차별 핵심 지표 비교" / "상품별 주요 변동" (`WEEKCMP`/`WEEKPROD` in
+`index.html`) are computed client-side by `computeWeeklyComparison()`/
+`computeWeeklyProductChanges()` from the two most recent `snapshotHistory`
+entries — see the Phase 4 section above for the selection rule (every
+product with a nonzero current-month delta, sorted by |delta|, not a fixed
+top-N — verified against the real hand-curated 7/24→7/31 data before the
+manual version was removed).
 
 ## Roadmap phases (PRD §7)
 
