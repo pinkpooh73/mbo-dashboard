@@ -1,9 +1,19 @@
 name: Sync data.json from Google Sheet
 
 on:
+  repository_dispatch:
+    types: [sheet-edited]
+    # Fired by the Apps Script onEdit trigger bound to the sheet (see
+    # sync/apps-script/onEditTrigger.gs) — this is the Phase 4 near-real-time
+    # path, typically landing within ~30-60s of an edit (the Apps Script side
+    # debounces rapid consecutive edits down to one call).
   schedule:
-    # Hourly, per PRD Phase 2 (§3.3 — polling every hour as the first step;
-    # an Apps Script webhook for near-real-time sync is Phase 4).
+    # Kept as a fallback safety net, not replaced (Phase 4 decision — see
+    # CLAUDE.md/PRD notes): if the Apps Script trigger silently stops firing
+    # (quota exhaustion, script authorization revoked, trigger deleted...),
+    # the dashboard would otherwise go stale with no visible symptom until
+    # someone happens to notice. Worst case with both paths is 1h staleness,
+    # same as before Phase 4; best case is ~1min.
     - cron: '0 * * * *'
   workflow_dispatch: {}
     # Manual "Run workflow" button in the Actions tab — use this to verify

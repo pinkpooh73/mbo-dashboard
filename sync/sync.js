@@ -19,6 +19,7 @@ const path = require('path');
 const { GoogleAuth } = require('google-auth-library');
 const { parseSheet, SheetStructureError, padRow } = require('./parseSheet');
 const { renderRawTable } = require('./renderRawTable');
+const { appendSnapshot } = require('./mergeSnapshot');
 
 const SHEET_NAME = '미디어사업실_전체';
 const RANGE = `${SHEET_NAME}!A1:S120`;
@@ -93,6 +94,8 @@ async function main() {
 
   const existing = JSON.parse(fs.readFileSync(DATA_JSON_PATH, 'utf8'));
 
+  const newSnapshotHistory = appendSnapshot(existing.snapshotHistory, result.products);
+
   const updated = Object.assign({}, existing, {
     updatedAt: new Date().toISOString(),
     products: result.products,
@@ -101,13 +104,20 @@ async function main() {
       actWon: result.totalsCheck.totals.totalActR
     },
     rawTableHtml: renderRawTable(rows.map(padRow)),
-    dataQualityWarnings: result.warnings
+    dataQualityWarnings: result.warnings,
+    snapshotHistory: newSnapshotHistory
   });
+  // Phase 4: WEEKCMP/WEEKPROD ("주차별 비교") are now derived client-side
+  // from the two most recent snapshotHistory entries (see
+  // computeWeeklyComparison/computeWeeklyProductChanges in index.html) —
+  // the sync job no longer owns or writes these fields.
+  delete updated.weeklyComparison;
+  delete updated.weeklyProductChanges;
 
   fs.writeFileSync(DATA_JSON_PATH, JSON.stringify(updated), 'utf8');
   console.log(
     `data.json 갱신 완료 (products: ${Object.keys(result.products).length}, ` +
-    `warnings: ${result.warnings.length})`
+    `warnings: ${result.warnings.length}, snapshotHistory: ${newSnapshotHistory.length}개)`
   );
 }
 

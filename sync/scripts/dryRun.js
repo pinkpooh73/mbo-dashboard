@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { parseSheet, padRow } = require('../parseSheet');
 const { renderRawTable } = require('../renderRawTable');
+const { appendSnapshot } = require('../mergeSnapshot');
 
 const rows = require('../test/fixtures/sheet_20260731.json');
 const existingPath = path.join(__dirname, '..', '..', 'data.json');
@@ -14,6 +15,7 @@ const outPath = path.join(__dirname, 'dryRun.out.json');
 
 const result = parseSheet(rows);
 const existing = JSON.parse(fs.readFileSync(existingPath, 'utf8'));
+const newSnapshotHistory = appendSnapshot(existing.snapshotHistory, result.products);
 
 const updated = Object.assign({}, existing, {
   updatedAt: new Date().toISOString(),
@@ -23,14 +25,17 @@ const updated = Object.assign({}, existing, {
     actWon: result.totalsCheck.totals.totalActR
   },
   rawTableHtml: renderRawTable(rows.map(padRow)),
-  dataQualityWarnings: result.warnings
+  dataQualityWarnings: result.warnings,
+  snapshotHistory: newSnapshotHistory
 });
+delete updated.weeklyComparison;
+delete updated.weeklyProductChanges;
 
 fs.writeFileSync(outPath, JSON.stringify(updated), 'utf8');
 console.log('wrote', outPath, JSON.stringify(updated).length, 'bytes');
 console.log('warnings:', result.warnings);
+console.log('snapshotHistory dates:', newSnapshotHistory.map((s) => s.date));
 console.log('unchanged fields carried over:',
-  ['agencyRevenue', 'campaignDetails', 'weeklyComparison', 'weeklyProductChanges',
-    'snapshotHistory', 'legacy', 'stellaH1BillOverride', 'monthsElapsed']
+  ['agencyRevenue', 'campaignDetails', 'legacy', 'stellaH1BillOverride', 'monthsElapsed']
     .map((k) => `${k}=${JSON.stringify(updated[k]) === JSON.stringify(existing[k])}`)
     .join(', '));
