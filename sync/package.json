@@ -1,0 +1,14 @@
+{
+  "name": "mbo-dashboard-sync",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Google Sheets -> data.json sync job for the 미디어사업실 매출관리 대시보드 (PRD Phase 2).",
+  "main": "sync.js",
+  "scripts": {
+    "sync": "node sync.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "google-auth-library": "^9.14.1"
+  }
+}

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>'26년 미디어사업실 KPI 달성현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#FAFAFB;--sur:#fff;--sur2:#F4F4F6;
+  --bdr:rgba(17,17,26,.08);--bdr2:rgba(17,17,26,.14);
+  --tp:#15171E;--ts:#5A5E6C;--tm:#9C9FAC;
+  --ink:#15171E;--accent:#6670B8;--accent2:#7B84CC;
+  --head-bg:#7078B5;--head-bg2:#8791CC;--head-tp:#FFFFFF;--head-ts:rgba(255,255,255,.78);--head-bdr:rgba(255,255,255,.22);
+  --shadow-sm:0 1px 2px rgba(17,17,26,.04);
+  --shadow-md:0 6px 20px -6px rgba(17,17,26,.12);
+  --radius:12px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;}
+body{background:var(--bg);color:var(--tp);font-family:"Noto Sans KR",sans-serif;letter-spacing:-.006em;font-size:13.5px;}
+.sticky{position:sticky;top:0;z-index:100;background:linear-gradient(120deg,var(--head-bg),var(--head-bg2));padding:1.7rem 1.9rem 0;box-shadow:0 4px 16px rgba(112,120,181,.18);}
+.sticky::after{content:"";display:block;height:1.1rem;}
+.wrap{padding:1.7rem 1.9rem 2.6rem;max-width:1360px;margin:0 auto;}
+.page{display:none;}.page.active{display:block;animation:fadein .2s ease;}
+@keyframes fadein{from{opacity:0;}to{opacity:1;}}
+
+.nav{display:flex;gap:22px;margin-bottom:1.45rem;border-bottom:1px solid var(--head-bdr);}
+.nb{padding:0 1px 11px;font-size:12.5px;border:none;background:transparent;color:var(--head-ts);font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;}
+.nb:hover{color:var(--head-tp);}
+.nb.on{color:var(--head-tp);border-bottom-color:#fff;}
+
+.hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;}
+.hdr h1{font-size:1.55rem;font-weight:800;letter-spacing:-.025em;color:var(--head-tp);}
+.hdr h1::before{content:"KPI REPORT";display:block;font-size:9.5px;font-weight:700;letter-spacing:.16em;color:var(--head-ts);margin-bottom:7px;}
+.hdr p{font-size:10.5px;color:var(--head-ts);font-family:"DM Mono",monospace;margin-top:6px;letter-spacing:.01em;}
+
+.bdg{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:11px;font-family:"DM Mono",monospace;font-weight:700;border:1px solid;white-space:nowrap;background:rgba(255,255,255,.1);}
+.bg{color:#C8F2E0;border-color:rgba(200,242,224,.45);background:rgba(200,242,224,.12);}
+.bd{color:#FFD6CC;border-color:rgba(255,214,204,.45);background:rgba(255,214,204,.12);}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-bottom:1.4rem;background:var(--bdr);border:1px solid var(--bdr);border-radius:var(--radius);overflow:hidden;}
+.card{background:var(--sur);border:none;border-radius:0;padding:1.1rem 1.2rem;position:relative;overflow:hidden;}
+.card:hover{background:var(--sur2);}
+.card::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--ac,var(--bdr2));}
+.kl{font-size:9.5px;color:var(--tm);letter-spacing:.09em;text-transform:uppercase;margin-bottom:8px;font-weight:700;}
+.kv{font-size:1.5rem;font-weight:800;font-family:"DM Mono",monospace;line-height:1.1;margin-bottom:4px;letter-spacing:-.02em;color:var(--ink);}
+.ks{font-size:10.5px;color:var(--tm);font-family:"DM Mono",monospace;}
+
+.sec{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ts);margin:1.7rem 0 .7rem;display:flex;align-items:center;gap:10px;}
+.sec::before{content:"";width:12px;height:1.5px;background:var(--accent);flex-shrink:0;}
+.sec::after{content:"";flex:1;height:1px;background:var(--bdr);}
+
+.box{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius);padding:1.15rem 1.2rem;margin-bottom:.9rem;}
+.tbl{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius);overflow:hidden;margin-bottom:.9rem;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:var(--sur2);}
+thead th{padding:.6rem .95rem;font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--ts);text-align:left;border-bottom:1px solid var(--bdr2);text-transform:uppercase;}
+thead th:not(:first-child){text-align:right;}
+tbody tr{border-bottom:1px solid var(--bdr);}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--sur2);}
+td{padding:.58rem .95rem;font-size:12px;}
+td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:11.5px;}
+
+.leg{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:.6rem;font-size:10.5px;color:var(--ts);font-weight:600;}
+.lsq{width:7px;height:7px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle;}
+.lln{width:14px;height:2px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:4px;}
+
+.qb{padding:5px 13px;font-size:10.5px;border-radius:99px;cursor:pointer;border:1px solid var(--bdr2);background:transparent;color:var(--ts);font-weight:600;transition:all .15s;}
+.qb.off{border-color:var(--bdr);color:var(--tm);font-weight:500;}
+.qb:hover{border-color:var(--accent);color:var(--accent);}
+
+.pb{padding:4px 11px;font-size:10.5px;border-radius:7px;cursor:pointer;border:1px solid var(--bdr);background:transparent;color:var(--ts);font-weight:600;transition:all .15s;}
+.pb.on{color:#fff;font-weight:700;border-color:transparent;}
+
+.mb{padding:6px 14px;font-size:11.5px;border-radius:8px;cursor:pointer;border:1px solid var(--bdr);background:var(--sur);color:var(--ts);font-weight:600;transition:all .15s;}
+.mb.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;}
+
+.prog-row{display:flex;align-items:center;gap:10px;margin-bottom:.65rem;}
+.prog-row:last-child{margin-bottom:0;}
+.plbl{font-size:11px;color:var(--ts);font-weight:600;width:120px;flex-shrink:0;}
+.pbar-wrap{flex:1;height:6px;background:var(--sur2);border-radius:99px;overflow:hidden;}
+.pbar{height:100%;border-radius:99px;}
+.ppct{font-family:"DM Mono",monospace;font-size:11.5px;font-weight:700;width:52px;text-align:right;flex-shrink:0;}
+
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--bdr);border:1px solid var(--bdr);border-radius:var(--radius-sm);overflow:hidden;}
+.ccard{background:var(--sur);border:none;border-radius:0;padding:.8rem .9rem;position:relative;}
+
+.footer{margin-top:2.1rem;font-size:9.5px;color:var(--tm);font-family:"DM Mono",monospace;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;padding-top:1rem;border-top:1px solid var(--bdr);}
+
+#gate{position:fixed;inset:0;z-index:1000;background:linear-gradient(135deg,var(--head-bg),var(--head-bg2));display:flex;align-items:center;justify-content:center;padding:1.5rem;}
+#gate.hidden{display:none;}
+#gate-box{background:var(--sur);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:2rem 1.9rem;width:100%;max-width:320px;}
+#gate-box h1{font-size:1.05rem;font-weight:800;color:var(--ink);margin-bottom:.3rem;}
+#gate-box p{font-size:11.5px;color:var(--ts);margin-bottom:1.2rem;}
+#gate-pw{width:100%;padding:.65rem .8rem;font-size:14px;border:1px solid var(--bdr2);border-radius:var(--radius-sm);margin-bottom:.7rem;background:var(--sur2);color:var(--ink);font-family:"DM Mono",monospace;}
+#gate-pw:focus{outline:none;border-color:var(--accent);}
+#gate-btn{width:100%;padding:.65rem .8rem;font-size:13px;font-weight:700;border:none;border-radius:var(--radius-sm);background:var(--accent);color:#fff;cursor:pointer;transition:background .15s;}
+#gate-btn:hover{background:var(--accent2);}
+#gate-err{font-size:11.5px;color:#E2685C;margin-top:.6rem;min-height:1em;}
+#app{display:none;}
+#app.ready{display:block;}
+</style>
+
+
+</head>
+<body>
+<div id="gate">
+  <div id="gate-box">
+    <h1>'26년 미디어사업실 KPI 달성현황</h1>
+    <p>비밀번호를 입력해 주세요.</p>
+    <input type="password" id="gate-pw" placeholder="비밀번호" autocomplete="off">
+    <button id="gate-btn" onclick="tryUnlock()">입장</button>
+    <div id="gate-err"></div>
+  </div>
+</div>
+<div id="app">
+<div class="sticky">
+  <div class="hdr">
+    <div><h1>'26년 미디어사업실 KPI 달성현황</h1><p id="hdr-sub">구글 시트 2026년_미디어사업실 매출 관리_v2.0 &nbsp;|&nbsp; R6 취급고 KPI · R7 매출 KPI</p></div>
+    <div style="display:flex;gap:6px;flex-shrink:0;">
+      <div class="bdg bg"><span class="dot"></span><span id="bdg-b">취급고 -</span></div>
+      <div id="bdg-r-wrap" class="bdg bd"><span class="dot"></span><span id="bdg-r">매출 -</span></div>
+    </div>
+  </div>
+  <div class="nav">
+    <button id="nb-kpi" class="nb on" onclick="go('kpi')">📊 KPI 달성현황</button>
+    <button id="nb-biz" class="nb" onclick="go('biz')">📋 미디어사업팀</button>
+    <button id="nb-mkt" class="nb" onclick="go('mkt')">📋 미디어마케팅팀</button>
+    <button id="nb-ag"  class="nb" onclick="go('ag')">🏢 대행사별 매출</button>
+    <button id="nb-camp"class="nb" onclick="go('camp')">🗂 월별 캠페인</button>
+    <button id="nb-raw" class="nb" onclick="go('raw')">📋 KPI 데이터</button>
+  </div>
+</div>
+<div class="wrap">
+
+<!-- KPI 달성현황 -->
+<div id="pg-kpi" class="page active">
+  <div class="g4" id="kpi-cards"></div>
+  <div class="g4" id="kpi-qbox"></div>
+  <div class="sec">주차별 핵심 지표 비교</div>
+  <div class="box" id="week-metrics"></div>
+  <div class="sec">상품별 주요 변동</div>
+  <div id="week-prod-changes" style="margin-bottom:.9rem;"></div>
+  <div class="sec">'26년 전체 KPI 달성 진행현황</div>
+  <div class="box" id="prog-box"></div>
+  <div style="display:flex;gap:6px;margin:.75rem 0 .4rem;">
+    <button class="qb" id="btn-b" onclick="switchKPI('b')">취급고</button>
+    <button class="qb off" id="btn-r" onclick="switchKPI('r')">매출</button>
+  </div>
+  <div class="box">
+    <p id="mc-title" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p>
+    <div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div>
+    <div style="position:relative;height:210px;"><canvas id="mc"></canvas></div>
+  </div>
+  <div class="sec">분기별 전체 달성현황</div>
+  <div class="box">
+    <div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div>
+    <div style="position:relative;height:200px;"><canvas id="qtc"></canvas></div>
+  </div>
+  <div class="sec">취급고 — 상품별 분기 달성률(%)</div>
+  <div class="box"><div style="position:relative;height:230px;"><canvas id="qpb"></canvas></div></div>
+  <div class="sec">매출 — 상품별 분기 달성률(%)</div>
+  <div class="box"><div style="position:relative;height:250px;"><canvas id="qpr"></canvas></div></div>
+  <div class="sec">분기별 실적 상세 — 취급고 달성률</div>
+  <div class="tbl"><table><thead><tr><th>상품</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr></thead><tbody id="qtbl-b"></tbody></table></div>
+  <div class="sec">분기별 실적 상세 — 매출 달성률</div>
+  <div class="tbl"><table><thead><tr><th>상품</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr></thead><tbody id="qtbl-r"></tbody></table></div>
+</div>
+
+<!-- 미디어사업팀 -->
+<div id="pg-biz" class="page">
+  <p style="font-size:12px;color:var(--ts);margin-bottom:.7rem;">비즈링 · 들리Go · 문자&amp;B2G · 옥외광고 · 용역</p>
+  <div class="g4" id="biz-cards"></div>
+  <div class="g4" id="biz-qbox"></div>
+  <div style="display:flex;gap:6px;margin:.75rem 0 .4rem;">
+    <button class="qb" id="biz-bb" onclick="switchTeam('biz','b')">취급고</button>
+    <button class="qb off" id="biz-rb" onclick="switchTeam('biz','r')">매출</button>
+  </div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-mc"></canvas></div></div>
+  <div class="sec">상품별 취급고 달성 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-pb"></canvas></div></div>
+  <div class="sec">상품별 매출 달성 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#E3A857;"></span>실적</span><span><span class="lln" style="background:#E2685C;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-pr"></canvas></div></div>
+  <div class="sec">상품별 실적 상세 (1~7월)</div>
+  <div class="tbl"><table><thead><tr><th>상품</th><th>취급고KPI</th><th>취급고실적</th><th>취급고달성률</th><th>매출KPI</th><th>매출실적</th><th>매출달성률</th></tr></thead><tbody id="biz-tbl"></tbody></table></div>
+  <div class="sec">상품별 월별 달성현황</div>
+  <div id="biz-ptabs" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.45rem;"></div>
+  <div class="box"><p id="biz-pm-t" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p><div class="leg"><span><span class="lsq" style="background:rgba(37,99,235,.3);"></span>취급고KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>취급고실적</span><span><span class="lsq" style="background:rgba(251,191,36,.4);"></span>매출KPI</span><span><span class="lsq" style="background:#E3A857;"></span>매출실적</span><span><span class="lln" style="background:#E2685C;"></span>달성률</span></div><div style="position:relative;height:240px;"><canvas id="biz-pm"></canvas></div></div>
+</div>
+
+<!-- 미디어마케팅팀 -->
+<div id="pg-mkt" class="page">
+  <p style="font-size:12px;color:var(--ts);margin-bottom:.7rem;">ASUM · 비즈챗 · Stellaize · RMN · 다윈 · 기타</p>
+  <div class="g4" id="mkt-cards"></div>
+  <div class="g4" id="mkt-qbox"></div>
+  <div style="display:flex;gap:6px;margin:.75rem 0 .4rem;">
+    <button class="qb" id="mkt-bb" onclick="switchTeam('mkt','b')">취급고</button>
+    <button class="qb off" id="mkt-rb" onclick="switchTeam('mkt','r')">매출</button>
+  </div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-mc"></canvas></div></div>
+  <div class="sec">상품별 취급고 달성 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-pb"></canvas></div></div>
+  <div class="sec">상품별 매출 달성 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#E3A857;"></span>실적</span><span><span class="lln" style="background:#E2685C;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-pr"></canvas></div></div>
+  <div class="sec">상품별 실적 상세 (1~7월)</div>
+  <div class="tbl"><table><thead><tr><th>상품</th><th>취급고KPI</th><th>취급고실적</th><th>취급고달성률</th><th>매출KPI</th><th>매출실적</th><th>매출달성률</th></tr></thead><tbody id="mkt-tbl"></tbody></table></div>
+  <div class="sec">상품별 월별 달성현황</div>
+  <div id="mkt-ptabs" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.45rem;"></div>
+  <div class="box"><p id="mkt-pm-t" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p><div class="leg"><span><span class="lsq" style="background:rgba(37,99,235,.3);"></span>취급고KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>취급고실적</span><span><span class="lsq" style="background:rgba(251,191,36,.4);"></span>매출KPI</span><span><span class="lsq" style="background:#E3A857;"></span>매출실적</span><span><span class="lln" style="background:#E2685C;"></span>달성률</span></div><div style="position:relative;height:240px;"><canvas id="mkt-pm"></canvas></div></div>
+</div>
+
+<!-- 대행사별 매출 -->
+<div id="pg-ag" class="page">
+  <p style="font-size:12px;color:var(--ts);margin-bottom:.7rem;">상품별 대행사 매출추이 (확정·순매출·만원) ※ 비즈챗=렙사기준</p>
+  <div id="ag-ptabs" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.7rem;"></div>
+  <div id="ag-sum" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-bottom:.85rem;"></div>
+  <div class="box"><p id="ag-title" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p><div id="ag-leg" class="leg"></div><div style="position:relative;height:230px;"><canvas id="ag-mc"></canvas></div></div>
+  <div class="box"><p style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;">연간 누적 순매출 (만원)</p><div style="position:relative;height:250px;"><canvas id="ag-tc"></canvas></div></div>
+  <div class="tbl" style="overflow-x:auto;"><table><thead><tr id="ag-th"></tr></thead><tbody id="ag-tb"></tbody></table></div>
+</div>
+
+<!-- 월별 캠페인 -->
+<div id="pg-camp" class="page">
+  <p style="font-size:12px;color:var(--ts);margin-bottom:.65rem;">확정건 순매출 상위3건 ※ 다윈=시작월 / 나머지=세금계산서발행월 / 2026년 시작건만</p>
+  <div id="camp-mtabs" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.4rem;"></div>
+  <div id="camp-ptabs" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.7rem;"></div>
+  <div id="camp-sum" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(98px,1fr));gap:5px;margin-bottom:.85rem;"></div>
+  <div id="camp-body"></div>
+</div>
+
+<!-- KPI 데이터 -->
+<div id="pg-raw" class="page">
+  <p style="font-size:12px;color:var(--ts);margin-bottom:.45rem;">미디어사업실_전체 시트 원본 · 금액=원 · <span style="color:#4FB88A;">■</span>100%↑ <span style="color:#E3A857;">■</span>70~100% <span style="color:#E2685C;">■</span>70%미만</p>
+  <div id="raw-wrap" style="overflow-x:auto;border:1px solid var(--bdr);border-radius:12px;"></div>
+</div>
+
+<div class="footer">
+  <span>구글 시트: 2026년_미디어사업실 매출 관리_v2.0</span>
+  <span>다윈=시작월 / 나머지=세금계산서발행월 / Stellaize 상반기 진행바=P66셀 / 비즈챗=렙사기준</span>
+</div>
+</div><!-- /wrap -->
+</div><!-- /app -->
+<script>
+var TOTAL,PRODS,BIZ,MKT,TKPIB,TKPIR,TACTB,TACTR,TQKPI,TQACT,STELLA,N,AG,CD,WEEKCMP,WEEKPROD,DATA;
+const M=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const QQ=['Q1','Q2','Q3','Q4'];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const PC={'비즈링':'#6683E0','들리고':'#5CB897','들리Go':'#5CB897','옥외광고':'#7C8798','문자B2G':'#C99A5C','문자&B2G':'#C99A5C','용역':'#9080D6','다윈':'#A78BE0','ASUM':'#4FB88A','비즈챗':'#6FA0E8','Stellaize':'#E2685C','RMN':'#E3A857','기타':'#8891A3','리사이즈애드':'#5CAEC0'};
+const AGC={'비즈챗':'#6FA0E8','ASUM':'#4FB88A','RMN':'#E3A857','Stellaize':'#E2685C','다윈':'#9080D6','들리Go':'#5CB897','옥외광고':'#7C8798','문자&B2G':'#C99A5C','비즈링':'#6683E0'};
+const PAL=['#6FA0E8','#4FB88A','#E3A857','#E2685C','#9080D6','#5CB897','#C99A5C','#7C8798','#6683E0','#A78BE0'];
+
+
+function fmt(v){return v>=10000?Math.round(v/10000)+'억':v.toLocaleString()+'만';}
+function pct(a,k){return k>0?Math.round(a/k*1000)/10:0;}
+function s3(a,s){return a.slice(s,s+3).reduce((x,y)=>x+y,0);}
+function rc(v){return v>=100?'#4FB88A':v>=70?'#E3A857':v>0?'#E2685C':'#A6ACBD';}
+function f0(v){return(!v&&v!==0)?'-':Math.round(v).toLocaleString();}
+
+// ── 페이지 전환 ──
+const PAGES=['kpi','biz','mkt','ag','camp','raw'];
+function go(p){
+  PAGES.forEach(function(k){
+    document.getElementById('pg-'+k).classList.toggle('active',k===p);
+    document.getElementById('nb-'+k).classList.toggle('on',k===p);
+  });
+  if(p==='ag'&&!window.agDone){buildAG();window.agDone=true;}
+  if(p==='biz'&&!window.bizDone){buildTeam('biz');window.bizDone=true;}
+  if(p==='mkt'&&!window.mktDone){buildTeam('mkt');window.mktDone=true;}
+  if(p==='raw'&&!window.rawDone){buildRaw();window.rawDone=true;}
+}
+
+// ── 차트 헬퍼 ──
+function mkBL(id,labels,kpi,act,rates,bc,lc){
+  return new Chart(document.getElementById(id),{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {type:'bar',label:'KPI',data:kpi,backgroundColor:'#6683E0',borderWidth:0,order:2},
+      {type:'bar',label:'실적',data:act,backgroundColor:bc,borderWidth:0,order:1},
+      {type:'line',label:'달성률',data:rates,borderColor:lc,backgroundColor:'transparent',pointBackgroundColor:lc,pointRadius:3,borderWidth:2,tension:0.3,yAxisID:'y2',order:0}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.yAxisID==='y2'?' 달성률: '+(ctx.raw||'-')+'%':' '+ctx.dataset.label+': '+(ctx.raw||0).toLocaleString()+'만';}  }}},
+      scales:{
+        x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10},color:'#5A5E6C'},grid:{display:false}},
+        y:{ticks:{callback:fmt,font:{size:10},color:'#5A5E6C'},grid:{color:'rgba(17,17,26,.055)'}},
+        y2:{position:'right',ticks:{callback:function(v){return v+'%';},font:{size:10},color:lc},grid:{display:false},min:0,suggestedMax:200}
+      }
+    }
+  });
+}
+
+// ── KPI 달성현황 ──
+var kpiSeg='b', kpiChart=null;
+
+function buildKPICards(){
+  var t=TOTAL;
+  var pal=['#6FA0E8','#E3A857','#4FB88A','#4FB88A'];
+  var kb7=TKPIB.slice(0,N).reduce(function(a,b){return a+b;},0);
+  var ab7=TACTB.slice(0,N).reduce(function(a,b){return a+b;},0);
+  var kr7=TKPIR.slice(0,N).reduce(function(a,b){return a+b;},0);
+  var ar7=TACTR.slice(0,N).reduce(function(a,b){return a+b;},0);
+  var brt=pct(ab7,kb7), rrt=pct(ar7,kr7);
+  document.getElementById('bdg-b').textContent='취급고 '+brt+'%';
+  document.getElementById('bdg-r').textContent='매출 '+rrt+'%';
+  document.getElementById('bdg-r-wrap').className='bdg '+(rrt>=100?'bg':'bd');
+  document.getElementById('kpi-cards').innerHTML=
+    '<div class="card" style="--ac:#6FA0E8;"><div class="kl">연간 취급고 KPI</div><div class="kv" style="color:#6FA0E8;">'+(t.kpi_b_ann*10000).toLocaleString()+'</div><div class="ks">상반기 '+(t.kpi_b_h1*10000).toLocaleString()+' / 하반기 '+(t.kpi_b_h2*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:#E3A857;"><div class="kl">연간 매출 KPI</div><div class="kv" style="color:#E3A857;">'+(t.kpi_r_ann*10000).toLocaleString()+'</div><div class="ks">상반기 '+(t.kpi_r_h1*10000).toLocaleString()+' / 하반기 '+(t.kpi_r_h2*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:#4FB88A;"><div class="kl">1~7월 취급고 달성률</div><div class="kv" style="color:'+rc(brt)+';">'+brt+'%</div><div class="ks">'+(ab7*10000).toLocaleString()+' / KPI '+(kb7*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:'+rc(rrt)+';"><div class="kl">1~7월 매출 달성률</div><div class="kv" style="color:'+rc(rrt)+';">'+rrt+'%</div><div class="ks">'+(ar7*10000).toLocaleString()+' / KPI '+(kr7*10000).toLocaleString()+'</div></div>';
+}
+
+function buildQBox(){
+  document.getElementById('kpi-qbox').innerHTML=QQ.map(function(q,i){
+    var kq=s3(TQKPI,i*3), aq=s3(TQACT,i*3);
+    var r=kq>0?Math.round(aq/kq*1000)/10:0;
+    return '<div class="card" style="--ac:'+PAL[i]+';"><div class="kl">'+q+' 매출 달성률</div><div class="kv" style="color:'+rc(r)+';">'+r+'%</div><div class="ks">'+(Math.round(aq/100000000*100)/100)+'억 / KPI '+(Math.round(kq/100000000*100)/100)+'억</div></div>';
+  }).join('');
+}
+
+
+
+
+
+function buildWeekMetrics(){
+  var W=WEEKCMP;
+  var html='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  html+='<thead><tr style="background:var(--sur2);">';
+  html+='<th style="padding:.5rem .8rem;font-size:11px;font-weight:500;color:var(--ts);text-align:left;border-bottom:1px solid var(--bdr);">항목</th>';
+  html+='<th style="padding:.5rem .8rem;font-size:11px;font-weight:500;color:var(--ts);text-align:right;border-bottom:1px solid var(--bdr);">지난 갱신 ('+W.prev_label+')</th>';
+  html+='<th style="padding:.5rem .8rem;font-size:11px;font-weight:500;color:var(--ts);text-align:right;border-bottom:1px solid var(--bdr);">이번 갱신 ('+W.cur_label+')</th>';
+  html+='<th style="padding:.5rem .8rem;font-size:11px;font-weight:500;color:var(--ts);text-align:right;border-bottom:1px solid var(--bdr);">변동</th>';
+  html+='</tr></thead><tbody>';
+  W.rows.forEach(function(r){
+    var up=r.cur>=r.prev;
+    var dc=up?'#4FB88A':'#E2685C';
+    var pf,cf,df;
+    if(r.unit==='pct'){
+      pf=r.prev+'%'; cf=r.cur+'%';
+      df=(up?'▲':'▼')+Math.abs(Math.round((r.cur-r.prev)*10)/10)+'%p';
+    } else {
+      pf=r.prev.toLocaleString(); cf=r.cur.toLocaleString();
+      df=(up?'▲':'▼')+Math.abs(r.cur-r.prev).toLocaleString();
+    }
+    html+='<tr style="border-bottom:.5px solid var(--bdr);">';
+    html+='<td style="padding:.55rem .8rem;font-weight:600;">'+r.label+'</td>';
+    html+='<td style="padding:.55rem .8rem;text-align:right;font-family:DM Mono,monospace;color:var(--tm);">'+pf+'</td>';
+    html+='<td style="padding:.55rem .8rem;text-align:right;font-family:DM Mono,monospace;font-weight:600;">'+cf+'</td>';
+    html+='<td style="padding:.55rem .8rem;text-align:right;">';
+    html+='<span class="bdg" style="border-color:transparent;background:'+(up?'rgba(12,158,110,.1)':'rgba(220,38,38,.1)')+';color:'+dc+';font-family:DM Mono,monospace;">'+df+'</span>';
+    html+='</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  if(W.note){ html+='<div style="margin-top:.6rem;padding:.6rem .8rem;background:rgba(217,119,6,.055);border:1px solid rgba(217,119,6,.25);border-radius:8px;font-size:11px;color:#92400e;line-height:1.5;">⚠️ '+W.note+'</div>'; }
+  document.getElementById('week-metrics').innerHTML=html;
+}
+
+function buildWeekProdChanges(){
+  function col(items,label,color){
+    var html='<div class="box" style="margin-bottom:0;">';
+    html+='<p style="font-size:12px;color:var(--ts);font-weight:500;margin-bottom:.55rem;"><span class="lsq" style="background:'+color+';"></span>'+label+'</p>';
+    if(items.length===0){ html+='<div style="font-size:11px;color:var(--tm);padding:.3rem 0;">유의미한 변동 없음</div>'; }
+    items.forEach(function(p,i){
+      var isNew=p.prev===0;
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;'+(i<items.length-1?'border-bottom:.5px solid var(--bdr);':'')+'">';
+      html+='<span style="font-size:12px;">'+p.name+' '+p.kind+' ('+p.month+')</span>';
+      html+='<span style="font-size:11px;font-family:DM Mono,monospace;text-align:right;">';
+      html+='<span style="color:var(--tm);">'+p.prev.toLocaleString()+'</span> → <b style="color:#1a2140;">'+p.cur.toLocaleString()+'</b>';
+      if(isNew) html+=' <span style="color:#E3A857;font-weight:600;">신규</span>';
+      html+='</span></div>';
+    });
+    html+='</div>';
+    return html;
+  }
+  var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+  html+=col(WEEKPROD.mkt,'미디어마케팅팀','#6FA0E8');
+  html+=col(WEEKPROD.biz,'미디어사업팀','#4FB88A');
+  html+='</div>';
+  document.getElementById('week-prod-changes').innerHTML=html;
+}
+function buildProg(){
+  var items=[
+    {l:'전체 취급고',ab:TACTB.reduce(function(a,b){return a+b;},0),kb:TKPIB.reduce(function(a,b){return a+b;},0)},
+    {l:'전체 매출',ab:TACTR.reduce(function(a,b){return a+b;},0),kb:TKPIR.reduce(function(a,b){return a+b;},0)}
+  ];
+  Object.keys(PRODS).forEach(function(p){
+    var pd=PRODS[p];
+    if(p==='Stellaize'){ items.push({l:p+' 취급고',fixed:STELLA}); return; }
+    var kb=pd.kpi_b.reduce(function(a,b){return a+b;},0);
+    if(!kb) return;
+    var ab=pd.act_b.reduce(function(a,b){return a+b;},0);
+    items.push({l:p+' 취급고',ab:ab,kb:kb});
+  });
+  document.getElementById('prog-box').innerHTML=items.map(function(it){
+    var rate=it.fixed!==undefined?it.fixed:(it.kb>0?Math.round(it.ab/it.kb*1000)/10:0);
+    var c=rc(rate);
+    return '<div class="prog-row"><span class="plbl">'+it.l+'</span><div class="pbar-wrap"><div class="pbar" style="width:'+Math.min(rate,100)+'%;background:'+c+';"></div></div><span class="ppct" style="color:'+c+';">'+rate+'%</span><span style="font-size:10px;width:18px;">'+(rate>=100?'✅':'')+'</span></div>';
+  }).join('');
+}
+
+function buildMonthChart(){
+  var kpi=kpiSeg==='b'?TKPIB:TKPIR, act=kpiSeg==='b'?TACTB:TACTR;
+  var rates=kpi.map(function(k,i){return k>0?pct(act[i],k):null;});
+  var bc=kpiSeg==='b'?'#4FB88A':'#E3A857', lc=kpiSeg==='b'?'#E3A857':'#E2685C';
+  document.getElementById('mc-title').textContent='월별 '+(kpiSeg==='b'?'취급고':'매출')+' KPI vs 실적 (만원)';
+  if(kpiChart) kpiChart.destroy();
+  kpiChart=mkBL('mc',M,kpi,act,rates,bc,lc);
+}
+
+function switchKPI(seg){
+  kpiSeg=seg;
+  document.getElementById('btn-b').className='qb'+(seg==='b'?'':' off');
+  document.getElementById('btn-r').className='qb'+(seg==='r'?'':' off');
+  buildMonthChart();
+}
+
+function buildQTotal(){
+  var kq=QQ.map(function(_,i){return s3(TQKPI,i*3);});
+  var aq=QQ.map(function(_,i){return s3(TQACT,i*3);});
+  var rates=kq.map(function(k,i){return k>0?pct(aq[i],k):null;});
+  new Chart(document.getElementById('qtc'),{
+    type:'bar',
+    data:{labels:QQ,datasets:[
+      {type:'bar',label:'KPI',data:kq,backgroundColor:'#6683E0',borderWidth:0,order:2},
+      {type:'bar',label:'실적',data:aq,backgroundColor:'#4FB88A',borderWidth:0,order:1},
+      {type:'line',label:'달성률',data:rates,borderColor:'#E3A857',backgroundColor:'transparent',pointBackgroundColor:'#E3A857',pointRadius:5,borderWidth:2,yAxisID:'y2',order:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.yAxisID==='y2'?' 달성률: '+ctx.raw+'%':' '+ctx.dataset.label+': '+(Math.round((ctx.raw||0)/100000000*100)/100)+'억';}}}},
+      scales:{x:{grid:{display:false}},y:{ticks:{callback:function(v){return(Math.round(v/100000000*10)/10)+'억';},font:{size:10}},grid:{color:'rgba(17,17,26,.055)'}},y2:{position:'right',ticks:{callback:function(v){return v+'%';},font:{size:10},color:'#E3A857'},grid:{display:false},min:0}}
+    }
+  });
+}
+
+function buildQProd(id,seg){
+  var OD=['옥외광고','다윈'];
+  var rmap=seg==='b'?
+    {'비즈링':PRODS['비즈링'].bill,'들리고':PRODS['들리고'].bill,'문자B2G':PRODS['문자B2G'].bill,'옥외광고':PRODS['옥외광고'].bill,'ASUM':PRODS['ASUM'].bill,'비즈챗':PRODS['비즈챗'].bill,'Stellaize':PRODS['Stellaize'].bill,'RMN':PRODS['RMN'].bill}:
+    {'비즈링':PRODS['비즈링'].rev,'들리고':PRODS['들리고'].rev,'문자B2G':PRODS['문자B2G'].rev,'옥외광고':PRODS['옥외광고'].rev,'용역':PRODS['용역'].rev,'다윈':PRODS['다윈'].rev,'ASUM':PRODS['ASUM'].rev,'비즈챗':PRODS['비즈챗'].rev,'Stellaize':PRODS['Stellaize'].rev,'RMN':PRODS['RMN'].rev};
+  var labels=Object.keys(rmap);
+  var pal_q=['rgba(37,99,235,.8)','rgba(12,158,110,.8)','rgba(217,119,6,.8)','rgba(220,38,38,.8)'];
+  var ds=QQ.map(function(q,qi){
+    return {label:q,backgroundColor:pal_q[qi],borderWidth:0,data:labels.map(function(p){
+      if(seg==='b'&&p==='Stellaize'&&qi===0) return STELLA;
+      var arr=rmap[p]; if(!arr||!arr.length) return 0;
+      var sl=arr.slice(qi*3,qi*3+3);
+      var vals=OD.indexOf(p)>=0?sl:sl.filter(function(v){return v>0;});
+      return vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10:0;
+    })};
+  });
+  new Chart(document.getElementById(id),{type:'bar',data:{labels:labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:10}}}},
+      scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:0},grid:{display:false}},y:{ticks:{callback:function(v){return v+'%';},font:{size:10}},grid:{color:'rgba(17,17,26,.055)'},min:0}}
+    }
+  });
+}
+
+function buildQTbl(id,seg){
+  var OD=['옥외광고','다윈'];
+  var rmap=seg==='b'?
+    {'비즈링':PRODS['비즈링'].bill,'들리고':PRODS['들리고'].bill,'문자B2G':PRODS['문자B2G'].bill,'옥외광고':PRODS['옥외광고'].bill,'ASUM':PRODS['ASUM'].bill,'비즈챗':PRODS['비즈챗'].bill,'Stellaize':PRODS['Stellaize'].bill,'RMN':PRODS['RMN'].bill}:
+    {'비즈링':PRODS['비즈링'].rev,'들리고':PRODS['들리고'].rev,'문자B2G':PRODS['문자B2G'].rev,'옥외광고':PRODS['옥외광고'].rev,'용역':PRODS['용역'].rev,'다윈':PRODS['다윈'].rev,'ASUM':PRODS['ASUM'].rev,'비즈챗':PRODS['비즈챗'].rev,'Stellaize':PRODS['Stellaize'].rev,'RMN':PRODS['RMN'].rev};
+  document.getElementById(id).innerHTML=Object.entries(rmap).map(function(entry){
+    var prod=entry[0], arr=entry[1];
+    if(!arr||!arr.length) return '';
+    var cells=QQ.map(function(_,qi){
+      var v;
+      if(seg==='b'&&prod==='Stellaize'&&qi===0){v=STELLA;}
+      else{
+        var sl=arr.slice(qi*3,qi*3+3);
+        var vals=(['옥외광고','다윈'].indexOf(prod)>=0)?sl:sl.filter(function(x){return x>0;});
+        v=vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10:0;
+      }
+      return '<td style="color:'+rc(v)+';font-family:DM Mono,monospace;">'+v.toFixed(1)+'%</td>';
+    }).join('');
+    return '<tr><td style="font-weight:500;">'+prod+'</td>'+cells+'</tr>';
+  }).join('');
+}
+
+// ── 팀 탭 ──
+var teamCharts={};
+function buildTeam(tm){
+  var D=tm==='biz'?BIZ:MKT;
+  // 분기박스
+  document.getElementById(tm+'-qbox').innerHTML=QQ.map(function(q,i){
+    var kq=s3(D.kpi_r,i*3), aq=s3(D.act_r,i*3);
+    var r=kq>0?Math.round(aq/kq*1000)/10:0;
+    return '<div class="card" style="--ac:'+PAL[i]+';"><div class="kl">'+q+' 매출</div><div class="kv" style="color:'+rc(r)+';">'+r+'%</div><div class="ks">'+aq.toLocaleString()+'만</div></div>';
+  }).join('');
+  // 팀 카드
+  var kb=D.kpi_b.slice(0,N).reduce(function(a,b){return a+b;},0);
+  var ab=D.act_b.slice(0,N).reduce(function(a,b){return a+b;},0);
+  var kr=D.kpi_r.slice(0,N).reduce(function(a,b){return a+b;},0);
+  var ar=D.act_r.slice(0,N).reduce(function(a,b){return a+b;},0);
+  var br=pct(ab,kb), rr=pct(ar,kr);
+  document.getElementById(tm+'-cards').innerHTML=
+    '<div class="card" style="--ac:#6FA0E8;"><div class="kl">취급고 KPI (1~7월)</div><div class="kv" style="color:#6FA0E8;">'+(kb*10000).toLocaleString()+'</div><div class="ks">연간 '+D.kpi_b.reduce(function(a,b){return a+b;},0)*10000+'</div></div>'+
+    '<div class="card" style="--ac:#E3A857;"><div class="kl">매출 KPI (1~7월)</div><div class="kv" style="color:#E3A857;">'+(kr*10000).toLocaleString()+'</div><div class="ks">연간 '+D.kpi_r.reduce(function(a,b){return a+b;},0)*10000+'</div></div>'+
+    '<div class="card" style="--ac:#4FB88A;"><div class="kl">취급고 달성률 (1~7월)</div><div class="kv" style="color:'+rc(br)+';">'+br+'%</div><div class="ks">'+(ab*10000).toLocaleString()+' / KPI '+(kb*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:'+rc(rr)+';"><div class="kl">매출 달성률 (1~7월)</div><div class="kv" style="color:'+rc(rr)+';">'+rr+'%</div><div class="ks">'+(ar*10000).toLocaleString()+' / KPI '+(kr*10000).toLocaleString()+'</div></div>';
+  // 월별 차트
+  switchTeam(tm,'b');
+  // 상품별 차트
+  var prds=Object.keys(D.prods);
+  var kpb=prds.map(function(p){return D.prods[p].kpi_b.slice(0,N).reduce(function(a,b){return a+b;},0);});
+  var acb=prds.map(function(p){return D.prods[p].act_b.slice(0,N).reduce(function(a,b){return a+b;},0);});
+  var rtb=kpb.map(function(k,i){return k>0?pct(acb[i],k):null;});
+  mkBL(tm+'-pb',prds,kpb,acb,rtb,'#4FB88A','#E3A857');
+  var kpr=prds.map(function(p){return D.prods[p].kpi_r.slice(0,N).reduce(function(a,b){return a+b;},0);});
+  var acr=prds.map(function(p){return D.prods[p].act_r.slice(0,N).reduce(function(a,b){return a+b;},0);});
+  var rtr=kpr.map(function(k,i){return k>0?pct(acr[i],k):null;});
+  mkBL(tm+'-pr',prds,kpr,acr,rtr,'#E3A857','#E2685C');
+  // 실적 테이블
+  document.getElementById(tm+'-tbl').innerHTML=Object.entries(D.prods).map(function(e){
+    var p=e[0],pd=e[1];
+    var kb2=pd.kpi_b.slice(0,6).reduce(function(a,b){return a+b;},0);
+    var ab2=pd.act_b.slice(0,6).reduce(function(a,b){return a+b;},0);
+    var kr2=pd.kpi_r.slice(0,6).reduce(function(a,b){return a+b;},0);
+    var ar2=pd.act_r.slice(0,6).reduce(function(a,b){return a+b;},0);
+    var rb=kb2>0?pct(ab2,kb2):0, rr2=kr2>0?pct(ar2,kr2):0;
+    return '<tr><td style="font-weight:500;">'+p+'</td><td>'+f0(kb2)+'만</td><td>'+f0(ab2)+'만</td><td style="color:'+rc(rb)+';">'+rb.toFixed(1)+'%</td><td>'+f0(kr2)+'만</td><td>'+f0(ar2)+'만</td><td style="color:'+rc(rr2)+';">'+rr2.toFixed(1)+'%</td></tr>';
+  }).join('');
+  // 상품별 탭
+  selPM(tm, Object.keys(D.prods)[0]);
+}
+
+function switchTeam(tm,seg){
+  var D=tm==='biz'?BIZ:MKT;
+  var kpi=seg==='b'?D.kpi_b:D.kpi_r, act=seg==='b'?D.act_b:D.act_r;
+  var rates=kpi.map(function(k,i){return k>0?pct(act[i],k):null;});
+  var bc=seg==='b'?'#4FB88A':'#E3A857', lc=seg==='b'?'#E3A857':'#E2685C';
+  document.getElementById(tm+'-bb').className='qb'+(seg==='b'?'':' off');
+  document.getElementById(tm+'-rb').className='qb'+(seg==='r'?'':' off');
+  if(teamCharts[tm]) teamCharts[tm].destroy();
+  teamCharts[tm]=mkBL(tm+'-mc',M,kpi,act,rates,bc,lc);
+}
+
+function selPM(tm,prod){
+  var D=tm==='biz'?BIZ:MKT;
+  document.getElementById(tm+'-ptabs').innerHTML=Object.keys(D.prods).map(function(p){
+    var c=PC[p]||'#7C8798', on=p===prod;
+    return '<button class="pb'+(on?' on':'')+'" data-tm="'+tm+'" data-p="'+p+'" style="'+(on?'background:'+c+'18;color:'+c+';border-color:'+c+'55;':'')+'" onclick="selPM(this.dataset.tm,this.dataset.p)">'+p+'</button>';
+  }).join('');
+  var pd=D.prods[prod]; if(!pd) return;
+  document.getElementById(tm+'-pm-t').textContent=prod+' — 월별 취급고·매출 KPI vs 실적';
+  if(teamCharts[tm+'-pm']) teamCharts[tm+'-pm'].destroy();
+  var rates=pd.kpi_b.map(function(k,i){return k>0?pct(pd.act_b[i],k):null;});
+  teamCharts[tm+'-pm']=new Chart(document.getElementById(tm+'-pm'),{
+    type:'bar',
+    data:{labels:M,datasets:[
+      {type:'bar',label:'취급고KPI',data:pd.kpi_b,backgroundColor:'rgba(37,99,235,.3)',borderWidth:0,order:3},
+      {type:'bar',label:'취급고실적',data:pd.act_b,backgroundColor:'#4FB88A',borderWidth:0,order:2},
+      {type:'bar',label:'매출KPI',data:pd.kpi_r,backgroundColor:'rgba(251,191,36,.35)',borderWidth:0,order:3},
+      {type:'bar',label:'매출실적',data:pd.act_r,backgroundColor:'#E3A857',borderWidth:0,order:2},
+      {type:'line',label:'달성률',data:rates,borderColor:'#E2685C',backgroundColor:'transparent',pointBackgroundColor:'#E2685C',pointRadius:3,borderWidth:2,tension:0.3,yAxisID:'y2',order:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},y:{ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(17,17,26,.055)'}},y2:{position:'right',ticks:{callback:function(v){return v+'%';},font:{size:10},color:'#E2685C'},grid:{display:false},min:0}}
+    }
+  });
+}
+
+// ── 대행사 ──
+var agCur=null, agMC=null, agTC=null;
+function buildAG(){
+  var prds=Object.keys(AG); agCur='전체';
+  var tabs='<button class="pb on" data-p="전체" style="background:#1a214018;color:#1a2140;border-color:#1a214055;" onclick="selAG(this.dataset.p)">전체</button>';
+  tabs+=prds.map(function(p){
+    var c=AGC[p]||'#7C8798';
+    return '<button class="pb" data-p="'+p+'" style="" onclick="selAG(this.dataset.p)">'+p+'</button>';
+  }).join('');
+  document.getElementById('ag-ptabs').innerHTML=tabs;
+  renderAG();
+}
+
+function selAG(p){
+  agCur=p;
+  document.querySelectorAll('#ag-ptabs .pb').forEach(function(b){
+    var bp=b.dataset.p, c=bp==='전체'?'#1a2140':(AGC[bp]||'#7C8798'), on=bp===p;
+    b.className='pb'+(on?' on':'');
+    b.style=on?'background:'+c+'18;color:'+c+';border-color:'+c+'55;':'';
+  });
+  renderAG();
+}
+
+function renderAG(){
+  var c=AGC[agCur]||'#7C8798';
+  // 전체 선택 시 모든 상품 대행사 합산
+  var data;
+  if(agCur==='전체'){
+    data={};
+    Object.values(AG).forEach(function(prodAg){
+      Object.entries(prodAg).forEach(function(e){
+        var ag=e[0], v=e[1];
+        if(!data[ag]) data[ag]={monthly:[0,0,0,0,0,0,0,0,0,0,0,0],total:0};
+        v.monthly.forEach(function(x,i){data[ag].monthly[i]+=x;});
+        data[ag].total+=v.total;
+      });
+    });
+    c='#1a2140';
+  } else {
+    data=AG[agCur]||{};
+  }
+  document.getElementById('ag-title').textContent=(agCur==='전체'?'전체':agCur)+' — 대행사별 월별 순매출 (만원)';
+  var agents=Object.entries(data).sort(function(a,b){return b[1].total-a[1].total;});
+  document.getElementById('ag-sum').innerHTML=agents.slice(0,8).map(function(e,i){
+    return '<div style="background:var(--sur);border:.5px solid var(--bdr);border-radius:10px;padding:.55rem .75rem;border-top:2px solid '+PAL[i]+';"><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+e[0]+'</div><div style="font-size:13px;font-weight:700;font-family:DM Mono,monospace;color:'+PAL[i]+';">'+e[1].total.toLocaleString()+'만</div></div>';
+  }).join('');
+  document.getElementById('ag-leg').innerHTML=agents.slice(0,8).map(function(e,i){return '<span><span class="lsq" style="background:'+PAL[i]+';"></span>'+e[0]+'</span>';}).join('');
+  if(agMC) agMC.destroy();
+  if(agMC) agMC.destroy();
+  agMC=new Chart(document.getElementById('ag-mc'),{
+    type:'bar',
+    data:{labels:M,datasets:agents.slice(0,8).map(function(e,i){return {label:e[0],data:e[1].monthly,backgroundColor:PAL[i],borderWidth:0};})},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:10}}}},
+      scales:{
+        x:{stacked:true,ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},
+        y:{stacked:true,ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(17,17,26,.055)'}}
+      }
+    }
+  });
+  if(agTC) agTC.destroy();
+  var tots=agents.map(function(e){return {l:e[0],v:e[1].total};}).sort(function(a,b){return b.v-a.v;});
+  agTC=new Chart(document.getElementById('ag-tc'),{
+    type:'bar',
+    data:{labels:tots.map(function(x){return x.l;}),datasets:[{data:tots.map(function(x){return x.v;}),backgroundColor:tots.map(function(_,i){return PAL[i]||'#8891A3';}),borderWidth:0,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw.toLocaleString()+'만';}}}},
+      scales:{
+        x:{ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(17,17,26,.055)'}},
+        y:{ticks:{font:{size:11}},grid:{display:false}}
+      }
+    }
+  });
+  var th=document.getElementById('ag-th'), tb=document.getElementById('ag-tb');
+  th.innerHTML='<th style="padding:.5rem .75rem;font-size:11px;">대행사</th>'+M.map(function(m){return '<th style="padding:.5rem .75rem;font-size:11px;text-align:right;">'+m+'</th>';}).join('')+'<th style="padding:.5rem .75rem;font-size:11px;text-align:right;">합계</th>';
+  tb.innerHTML=agents.map(function(e){
+    return '<tr><td style="padding:.5rem .75rem;font-size:12px;font-weight:500;">'+e[0]+'</td>'+e[1].monthly.map(function(x){return '<td style="padding:.5rem .75rem;font-size:11px;font-family:DM Mono,monospace;">'+(x>0?x.toLocaleString():'-')+'</td>';}).join('')+'<td style="padding:.5rem .75rem;font-size:12px;font-weight:600;font-family:DM Mono,monospace;color:'+c+';">'+e[1].total.toLocaleString()+'</td></tr>';
+  }).join('');
+}
+
+// ── 캠페인 ──
+var campM=null, campP=null;
+var MO=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+function buildCamp(){
+  var months=Object.keys(CD).sort(function(a,b){return MO.indexOf(a)-MO.indexOf(b);});
+  if(!campM) campM='전체';
+  var mtabs='<button class="mb'+(campM==='전체'?' on':'')+'" data-m="전체" onclick="selCampM(this.dataset.m)">전체</button>';
+  mtabs+=months.map(function(m){
+    return '<button class="mb'+(m===campM?' on':'')+'" data-m="'+m+'" onclick="selCampM(this.dataset.m)">'+m+'</button>';
+  }).join('');
+  document.getElementById('camp-mtabs').innerHTML=mtabs;
+  var pl=campM&&CD[campM]?Object.keys(CD[campM]):[];
+  if(!campP||pl.indexOf(campP)<0) campP=pl[0]||null;
+  document.getElementById('camp-ptabs').innerHTML=pl.map(function(p){
+    var c=AGC[p]||PC[p]||'#7C8798', on=p===campP;
+    return '<button class="pb'+(on?' on':'')+'" data-p="'+p+'" style="'+(on?'background:'+c+'18;color:'+c+';border-color:'+c+'55;':'')+'" onclick="selCampP(this.dataset.p)">'+p+'</button>';
+  }).join('');
+  renderCamp();
+}
+
+function selCampM(m){campM=m;campP=null;buildCamp();}
+function selCampP(p){campP=p;buildCamp();}
+
+function renderCamp(){
+  var el=document.getElementById('camp-body'), sr=document.getElementById('camp-sum');
+  // 전체 월: 모든 월의 상품별 건수/매출 합산
+  var md, pl;
+  if(campM==='전체'){
+    md={};
+    Object.values(CD).forEach(function(mdata){
+      Object.entries(mdata).forEach(function(e){
+        var prod=e[0], pdata=e[1];
+        if(!md[prod]) md[prod]={n:0,r:0,c:[]};
+        md[prod].n+=pdata.n;
+        md[prod].r+=pdata.r;
+        md[prod].c=md[prod].c.concat(pdata.c);
+      });
+    });
+    // 상품별 top3 재정렬
+    Object.keys(md).forEach(function(prod){
+      md[prod].c=md[prod].c.sort(function(a,b){return b.v-a.v;}).slice(0,3);
+    });
+    pl=Object.keys(md);
+  } else {
+    if(!campM||!CD[campM]){el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--tm);">데이터 없음</div>';sr.innerHTML='';return;}
+    md=CD[campM]; pl=Object.keys(md);
+  }
+  sr.innerHTML=pl.map(function(p){
+    var c=AGC[p]||PC[p]||'#7C8798';
+    return '<div style="background:var(--sur);border:.5px solid var(--bdr);border-radius:10px;padding:.55rem .75rem;border-top:2px solid '+c+';"><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+p+'</div><div style="font-size:13px;font-weight:700;color:'+c+';">'+md[p].n+'건</div><div style="font-size:10px;color:var(--tm);">'+Math.round(md[p].r/10000).toLocaleString()+'만</div></div>';
+  }).join('');
+  if(!campP||!md[campP]){el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--tm);">상품을 선택하세요</div>';return;}
+  var pd=md[campP], c=AGC[campP]||PC[campP]||'#7C8798';
+  function fv(v){return Math.round(v/10000).toLocaleString()+'만';}
+  el.innerHTML='<div class="cgrid">'+pd.c.map(function(camp,i){
+    return '<div class="ccard"><div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--sur2);font-size:9px;color:var(--tm);display:flex;align-items:center;justify-content:center;">'+(i+1)+'</div><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+(camp.i||'')+'</div><div style="font-size:13px;font-weight:600;margin-bottom:1px;">'+camp.a+'</div><div style="font-size:11px;color:var(--ts);margin-bottom:.5rem;">'+camp.m+'</div><div style="border-top:.5px solid var(--bdr);margin:.4rem 0;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div style="background:var(--sur2);border-radius:4px;padding:3px 5px;"><div style="font-size:9px;color:var(--tm);">예산</div><div style="font-size:10px;font-family:DM Mono,monospace;">'+fv(camp.b)+'</div></div><div style="background:var(--sur2);border-radius:4px;padding:3px 5px;"><div style="font-size:9px;color:var(--tm);">순매출</div><div style="font-size:10px;font-family:DM Mono,monospace;color:'+c+';">'+fv(camp.v)+'</div></div></div></div>';
+  }).join('')+'</div>';
+}
+
+// ── KPI 데이터 탭 ──
+function buildRaw(){
+  document.getElementById('raw-wrap').innerHTML=DATA.rawTableHtml;
+
+}
+
+
+// ── 데이터 집계 (excludeFromBillTotal 플래그 기반) ──
+function sumArr(arr){return arr.reduce(function(a,b){return a+b;},0);}
+function computeTotal(products){
+  var kb=new Array(12).fill(0),kr=new Array(12).fill(0),ab=new Array(12).fill(0),ar=new Array(12).fill(0);
+  Object.values(products).forEach(function(p){
+    for(var i=0;i<12;i++){
+      kr[i]+=p.kpi_r[i]||0; ar[i]+=p.act_r[i]||0;
+      kb[i]+=p.kpi_b[i]||0;
+      if(!p.excludeFromBillTotal) ab[i]+=p.act_b[i]||0;
+    }
+  });
+  return {kpi_b:kb,kpi_r:kr,act_b:ab,act_r:ar,
+    kpi_b_h1:sumArr(kb.slice(0,6)),kpi_b_h2:sumArr(kb.slice(6,12)),kpi_b_ann:sumArr(kb),
+    kpi_r_h1:sumArr(kr.slice(0,6)),kpi_r_h2:sumArr(kr.slice(6,12)),kpi_r_ann:sumArr(kr)};
+}
+function computeTeam(products,team){
+  var kb=new Array(12).fill(0),kr=new Array(12).fill(0),ab=new Array(12).fill(0),ar=new Array(12).fill(0),prods={};
+  Object.entries(products).forEach(function(e){
+    var name=e[0],p=e[1];
+    if(p.team!==team) return;
+    prods[name]=p;
+    for(var i=0;i<12;i++){
+      kr[i]+=p.kpi_r[i]||0; ar[i]+=p.act_r[i]||0;
+      kb[i]+=p.kpi_b[i]||0;
+      if(!p.excludeFromBillTotal) ab[i]+=p.act_b[i]||0;
+    }
+  });
+  return {kpi_b:kb,kpi_r:kr,act_b:ab,act_r:ar,prods:prods};
+}
+function initDashboard(){
+// ── 초기화 ──
+window.agDone=false; window.bizDone=false; window.mktDone=false; window.rawDone=false;
+buildKPICards();
+buildQBox();
+buildWeekMetrics();
+buildWeekProdChanges();
+buildProg();
+buildMonthChart();
+buildQTotal();
+buildQProd('qpb','b');
+buildQProd('qpr','r');
+buildQTbl('qtbl-b','b');
+buildQTbl('qtbl-r','r');
+buildCamp();
+
+}
+function renderUpdatedAt(){
+  if(!DATA.updatedAt) return;
+  var d=new Date(DATA.updatedAt);
+  var pad=function(n){return String(n).padStart(2,'0');};
+  var txt=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+  var el=document.getElementById('hdr-sub');
+  if(el) el.textContent='구글 시트 2026년_미디어사업실 매출 관리_v2.0 | R6 취급고 KPI · R7 매출 KPI | 마지막 업데이트: '+txt;
+}
+function loadDashboard(){
+  fetch('data.json').then(function(r){return r.json();}).then(function(d){
+    DATA=d;
+    PRODS=d.products;
+    TOTAL=computeTotal(d.products);
+    BIZ=computeTeam(d.products,'biz');
+    MKT=computeTeam(d.products,'mkt');
+    TKPIB=TOTAL.kpi_b; TKPIR=TOTAL.kpi_r; TACTB=TOTAL.act_b; TACTR=TOTAL.act_r;
+    TQKPI=d.quarterlyOverall.kpiWon; TQACT=d.quarterlyOverall.actWon;
+    STELLA=d.stellaH1BillOverride;
+    N=d.monthsElapsed;
+    AG=d.agencyRevenue; CD=d.campaignDetails;
+    WEEKCMP=d.weeklyComparison; WEEKPROD=d.weeklyProductChanges;
+    renderUpdatedAt();
+    initDashboard();
+  }).catch(function(err){
+    document.getElementById('app').innerHTML='<div style="padding:2rem;font-family:sans-serif;color:#E2685C;">데이터를 불러오지 못했습니다 (data.json). '+err+'</div>';
+    console.error('data.json load failed', err);
+  });
+}
+
+// ── 접근 제어 ──
+// 정적 사이트라 완전한 보안은 아님(뷰 소스로 비밀번호 확인 가능) — 사내 관계자
+// 대상의 최소한의 진입장벽 용도로만 사용. 서버단 인증 전환은 Phase 6 참고.
+var GATE_PW='aleldjtkdjq1!';
+var GATE_KEY='mbo_dashboard_auth';
+function unlockApp(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.add('ready');
+  loadDashboard();
+}
+function tryUnlock(){
+  var input=document.getElementById('gate-pw');
+  if(input.value===GATE_PW){
+    try{ localStorage.setItem(GATE_KEY,'1'); }catch(e){}
+    unlockApp();
+  } else {
+    document.getElementById('gate-err').textContent='비밀번호가 올바르지 않습니다.';
+    input.value='';
+    input.focus();
+  }
+}
+(function(){
+  var authed=false;
+  try{ authed=localStorage.getItem(GATE_KEY)==='1'; }catch(e){}
+  if(authed){
+    unlockApp();
+  } else {
+    document.getElementById('gate-pw').addEventListener('keydown',function(e){
+      if(e.key==='Enter') tryUnlock();
+    });
+    document.getElementById('gate-pw').focus();
+  }
+})();
+</script>
+</body>
+</html>

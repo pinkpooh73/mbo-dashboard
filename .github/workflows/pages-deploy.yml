@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    # Covers direct commits/pushes to main (code changes, manual data.json edits).
+  workflow_run:
+    workflows: ["Sync data.json from Google Sheet"]
+    types: [completed]
+    # The sync job commits with the default GITHUB_TOKEN, and GitHub does not
+    # let token-authored pushes re-trigger other workflows via the `push`
+    # event (loop-prevention) — so data.json updates from sync.yml would
+    # never reach Pages without this explicit workflow_run trigger.
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble published site
+        run: |
+          mkdir -p _site
+          cp index.html data.json _site/
+          # Add anything else the dashboard needs to load (fonts/CSS are
+          # loaded from CDNs by index.html itself, so nothing else is
+          # required). Deliberately NOT publishing sync/, PRD docs, or
+          # CLAUDE.md — the Pages URL only needs to serve the dashboard.
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

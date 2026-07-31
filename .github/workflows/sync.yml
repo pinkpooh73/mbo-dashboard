@@ -1,0 +1,57 @@
+name: Sync data.json from Google Sheet
+
+on:
+  schedule:
+    # Hourly, per PRD Phase 2 (§3.3 — polling every hour as the first step;
+    # an Apps Script webhook for near-real-time sync is Phase 4).
+    - cron: '0 * * * *'
+  workflow_dispatch: {}
+    # Manual "Run workflow" button in the Actions tab — use this to verify
+    # the sync works end to end without waiting for the next hourly tick.
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: sync/package-lock.json
+
+      - name: Install sync dependencies
+        working-directory: sync
+        run: npm ci
+
+      - name: Run sync
+        working-directory: sync
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+        run: node sync.js
+        # A structural validation failure (SheetStructureError) or a fetch
+        # failure exits non-zero here, which fails this step *before* any
+        # commit step runs — data.json on the default branch is left
+        # untouched, and the failed run itself is GitHub's notification to
+        # whoever watches this repo's Actions.
+
+      - name: Commit data.json if changed
+        run: |
+          if git diff --quiet -- data.json; then
+            echo "No changes to data.json."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git commit -m "chore: sync data.json from Google Sheet [skip ci]"
+          git push
