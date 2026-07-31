@@ -4,111 +4,170 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>'26년 미디어사업실 KPI 달성현황</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root{
-  --bg:#FAFAFB;--sur:#fff;--sur2:#F4F4F6;
-  --bdr:rgba(17,17,26,.08);--bdr2:rgba(17,17,26,.14);
-  --tp:#15171E;--ts:#5A5E6C;--tm:#9C9FAC;
-  --ink:#15171E;--accent:#6670B8;--accent2:#7B84CC;
-  --head-bg:#7078B5;--head-bg2:#8791CC;--head-tp:#FFFFFF;--head-ts:rgba(255,255,255,.78);--head-bdr:rgba(255,255,255,.22);
-  --shadow-sm:0 1px 2px rgba(17,17,26,.04);
-  --shadow-md:0 6px 20px -6px rgba(17,17,26,.12);
-  --radius:12px;--radius-sm:8px;
+  /* Vuexy-inspired palette */
+  --primary:#7367F0;--primary-2:#9E95F5;--primary-d:#5F55E8;
+  --success:#28C76F;--warning:#FF9F43;--danger:#EA5455;--info:#00BAD1;
+  --bg:#F8F7FA;--sur:#fff;--sur2:#F4F3F7;--sur3:#EDECF1;
+  --bdr:#E5E4EB;--bdr2:#D5D3DC;
+  --tp:#2F2B3D;--ts:#6F6B7D;--tm:#A5A3AE;
+  --ink:#2F2B3D;--accent:#7367F0;--accent2:#9E95F5;
+  --head-bg:#7367F0;--head-bg2:#9E95F5;--head-tp:#fff;--head-ts:rgba(255,255,255,.8);--head-bdr:rgba(255,255,255,.22);
+  --shadow-sm:0 2px 4px rgba(165,163,174,.28);
+  --shadow-md:0 3px 12px rgba(47,43,61,.08);
+  --shadow-lg:0 12px 32px -10px rgba(47,43,61,.28);
+  --glow:0 2px 8px rgba(115,103,240,.32);
+  --radius:10px;--radius-sm:8px;--radius-lg:14px;
+  --side-w:256px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{-webkit-font-smoothing:antialiased;}
-body{background:var(--bg);color:var(--tp);font-family:"Noto Sans KR",sans-serif;letter-spacing:-.006em;font-size:13.5px;}
-.sticky{position:sticky;top:0;z-index:100;background:linear-gradient(120deg,var(--head-bg),var(--head-bg2));padding:1.7rem 1.9rem 0;box-shadow:0 4px 16px rgba(112,120,181,.18);}
-.sticky::after{content:"";display:block;height:1.1rem;}
-.wrap{padding:1.7rem 1.9rem 2.6rem;max-width:1360px;margin:0 auto;}
-.page{display:none;}.page.active{display:block;animation:fadein .2s ease;}
-@keyframes fadein{from{opacity:0;}to{opacity:1;}}
+body{background:var(--bg);color:var(--tp);font-family:"Public Sans","Noto Sans KR",sans-serif;letter-spacing:-.004em;font-size:13.5px;}
+.page{display:none;}.page.active{display:block;animation:fadein .22s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 
-.nav{display:flex;gap:22px;margin-bottom:1.45rem;border-bottom:1px solid var(--head-bdr);}
-.nb{padding:0 1px 11px;font-size:12.5px;border:none;background:transparent;color:var(--head-ts);font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;}
-.nb:hover{color:var(--head-tp);}
-.nb.on{color:var(--head-tp);border-bottom-color:#fff;}
+/* ── 사이드바 ── */
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--side-w);background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:300;transition:transform .22s ease;}
+.brand{padding:1.15rem 1.25rem 1rem;border-bottom:1px solid var(--bdr);}
+.brand img{display:block;height:26px;width:auto;margin-bottom:.75rem;}
+.brand .btitle{font-size:13px;font-weight:800;color:var(--tp);line-height:1.35;letter-spacing:-.02em;}
+.brand .bsub{font-size:9.5px;font-weight:700;letter-spacing:.16em;color:var(--primary);margin-top:3px;}
+.nav{flex:1;overflow-y:auto;padding:.9rem .75rem;display:flex;flex-direction:column;gap:3px;}
+.navlbl{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tm);padding:.35rem .6rem .5rem;}
+.nb{display:flex;align-items:center;gap:10px;width:100%;padding:.6rem .75rem;font-size:12.5px;font-weight:600;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--ts);cursor:pointer;text-align:left;white-space:nowrap;transition:background .15s,color .15s,box-shadow .15s;}
+.nb svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;opacity:.9;}
+.nb:hover{background:rgba(47,43,61,.06);color:var(--tp);}
+.nb:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+.nb.on{background:linear-gradient(72deg,var(--primary) 20%,rgba(115,103,240,.72) 100%);color:#fff;box-shadow:var(--glow);}
+.nb.on svg{opacity:1;}
+.sidefoot{padding:.85rem 1.15rem 1.1rem;border-top:1px solid var(--bdr);font-size:9.5px;color:var(--tm);font-family:"DM Mono",monospace;line-height:1.6;}
+#side-ovl{display:none;position:fixed;inset:0;background:rgba(47,43,61,.45);z-index:250;}
+body.side-open #side-ovl{display:block;}
+.hamb{display:none;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--bdr);border-radius:var(--radius-sm);background:var(--sur);color:var(--ts);cursor:pointer;flex-shrink:0;}
+.hamb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;}
 
-.hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;}
-.hdr h1{font-size:1.55rem;font-weight:800;letter-spacing:-.025em;color:var(--head-tp);}
-.hdr h1::before{content:"KPI REPORT";display:block;font-size:9.5px;font-weight:700;letter-spacing:.16em;color:var(--head-ts);margin-bottom:7px;}
-.hdr p{font-size:10.5px;color:var(--head-ts);font-family:"DM Mono",monospace;margin-top:6px;letter-spacing:.01em;}
+/* ── 메인/헤더 ── */
+.main{margin-left:var(--side-w);min-height:100vh;}
+.topbar{position:sticky;top:.7rem;z-index:200;margin:.9rem 1.6rem 0;padding:.8rem 1.15rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  background:rgba(255,255,255,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--bdr);border-radius:var(--radius);box-shadow:var(--shadow-md);}
+.hdr{display:flex;align-items:center;gap:.75rem;min-width:0;}
+.hdr h1{font-size:1.05rem;font-weight:800;letter-spacing:-.02em;color:var(--tp);line-height:1.3;}
+.hdr h1::before{content:"KPI REPORT";display:block;font-size:9px;font-weight:700;letter-spacing:.16em;color:var(--primary);margin-bottom:3px;}
+.hdr p{font-size:10px;color:var(--tm);font-family:"DM Mono",monospace;margin-top:3px;}
+.hdr-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
+.upd{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;font-size:10.5px;font-family:"DM Mono",monospace;font-weight:500;color:var(--ts);background:var(--sur2);border:1px solid var(--bdr);white-space:nowrap;}
+.upd svg{width:13px;height:13px;stroke:var(--tm);fill:none;stroke-width:1.8;stroke-linecap:round;}
+.wrap{padding:1.35rem 1.6rem 2.6rem;max-width:1440px;}
 
-.bdg{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:11px;font-family:"DM Mono",monospace;font-weight:700;border:1px solid;white-space:nowrap;background:rgba(255,255,255,.1);}
-.bg{color:#C8F2E0;border-color:rgba(200,242,224,.45);background:rgba(200,242,224,.12);}
-.bd{color:#FFD6CC;border-color:rgba(255,214,204,.45);background:rgba(255,214,204,.12);}
+.bdg{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:11px;font-family:"DM Mono",monospace;font-weight:700;border:1px solid transparent;white-space:nowrap;}
+.bg{color:#1F9D57;background:rgba(40,199,111,.14);border-color:rgba(40,199,111,.25);}
+.bd{color:#D14243;background:rgba(234,84,85,.14);border-color:rgba(234,84,85,.25);}
 .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
 
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-bottom:1.4rem;background:var(--bdr);border:1px solid var(--bdr);border-radius:var(--radius);overflow:hidden;}
-.card{background:var(--sur);border:none;border-radius:0;padding:1.1rem 1.2rem;position:relative;overflow:hidden;}
-.card:hover{background:var(--sur2);}
-.card::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--ac,var(--bdr2));}
-.kl{font-size:9.5px;color:var(--tm);letter-spacing:.09em;text-transform:uppercase;margin-bottom:8px;font-weight:700;}
-.kv{font-size:1.5rem;font-weight:800;font-family:"DM Mono",monospace;line-height:1.1;margin-bottom:4px;letter-spacing:-.02em;color:var(--ink);}
+/* ── 통계 카드 ── */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1.05rem;margin-bottom:1.35rem;}
+.card{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius);padding:1.05rem 1.15rem;position:relative;overflow:hidden;min-width:0;box-shadow:var(--shadow-md);transition:transform .16s ease,box-shadow .16s ease;}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+.card::before{content:"";position:absolute;top:.95rem;right:.95rem;width:34px;height:34px;border-radius:9px;background:var(--ac,var(--tm));opacity:.14;}
+.card::after{content:"";position:absolute;top:calc(.95rem + 13px);right:calc(.95rem + 11px);width:9px;height:9px;border-left:2.2px solid var(--ac,var(--tm));border-top:2.2px solid var(--ac,var(--tm));border-radius:1px;transform:rotate(45deg);opacity:.9;}
+.kl{font-size:9.5px;color:var(--tm);letter-spacing:.07em;text-transform:uppercase;margin-bottom:9px;font-weight:700;padding-right:44px;}
+.kv{font-size:1.45rem;font-weight:700;font-family:"DM Mono",monospace;line-height:1.15;margin-bottom:4px;letter-spacing:-.03em;color:var(--ink);}
 .ks{font-size:10.5px;color:var(--tm);font-family:"DM Mono",monospace;}
 
-.sec{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ts);margin:1.7rem 0 .7rem;display:flex;align-items:center;gap:10px;}
-.sec::before{content:"";width:12px;height:1.5px;background:var(--accent);flex-shrink:0;}
-.sec::after{content:"";flex:1;height:1px;background:var(--bdr);}
+.sec{font-size:12.5px;font-weight:700;letter-spacing:-.01em;color:var(--tp);margin:1.7rem 0 .75rem;display:flex;align-items:center;gap:9px;}
+.sec::before{content:"";width:3px;height:14px;border-radius:99px;background:var(--primary);flex-shrink:0;}
 
-.box{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius);padding:1.15rem 1.2rem;margin-bottom:.9rem;}
-.tbl{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius);overflow:hidden;margin-bottom:.9rem;}
+.box{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius);padding:1.2rem 1.25rem;margin-bottom:.9rem;box-shadow:var(--shadow-md);}
+.tbl{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius);overflow:hidden;margin-bottom:.9rem;box-shadow:var(--shadow-md);}
 table{width:100%;border-collapse:collapse;}
 thead tr{background:var(--sur2);}
-thead th{padding:.6rem .95rem;font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--ts);text-align:left;border-bottom:1px solid var(--bdr2);text-transform:uppercase;}
+thead th{padding:.65rem .95rem;font-size:10px;font-weight:700;letter-spacing:.07em;color:var(--ts);text-align:left;border-bottom:1px solid var(--bdr);text-transform:uppercase;white-space:nowrap;}
 thead th:not(:first-child){text-align:right;}
 tbody tr{border-bottom:1px solid var(--bdr);}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:var(--sur2);}
-td{padding:.58rem .95rem;font-size:12px;}
+td{padding:.6rem .95rem;font-size:12px;}
 td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:11.5px;}
 
-.leg{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:.6rem;font-size:10.5px;color:var(--ts);font-weight:600;}
-.lsq{width:7px;height:7px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle;}
+.leg{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:.7rem;font-size:10.5px;color:var(--ts);font-weight:600;}
+.lsq{width:8px;height:8px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:middle;}
 .lln{width:14px;height:2px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:4px;}
 
-.qb{padding:5px 13px;font-size:10.5px;border-radius:99px;cursor:pointer;border:1px solid var(--bdr2);background:transparent;color:var(--ts);font-weight:600;transition:all .15s;}
-.qb.off{border-color:var(--bdr);color:var(--tm);font-weight:500;}
-.qb:hover{border-color:var(--accent);color:var(--accent);}
+.qb{padding:6px 15px;font-size:11px;border-radius:99px;cursor:pointer;border:1px solid var(--primary);background:rgba(115,103,240,.1);color:var(--primary);font-weight:700;transition:all .15s;}
+.qb.off{border-color:var(--bdr2);color:var(--ts);background:transparent;font-weight:600;}
+.qb:hover{border-color:var(--primary);color:var(--primary);background:rgba(115,103,240,.1);}
+.qb:focus-visible,.pb:focus-visible,.mb:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 
-.pb{padding:4px 11px;font-size:10.5px;border-radius:7px;cursor:pointer;border:1px solid var(--bdr);background:transparent;color:var(--ts);font-weight:600;transition:all .15s;}
+.pb{padding:5px 12px;font-size:10.5px;border-radius:99px;cursor:pointer;border:1px solid var(--bdr2);background:var(--sur);color:var(--ts);font-weight:600;transition:all .15s;}
+.pb:hover{border-color:var(--primary);color:var(--primary);}
 .pb.on{color:#fff;font-weight:700;border-color:transparent;}
 
-.mb{padding:6px 14px;font-size:11.5px;border-radius:8px;cursor:pointer;border:1px solid var(--bdr);background:var(--sur);color:var(--ts);font-weight:600;transition:all .15s;}
-.mb.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;}
+.mb{padding:6px 14px;font-size:11.5px;border-radius:99px;cursor:pointer;border:1px solid var(--bdr2);background:var(--sur);color:var(--ts);font-weight:600;transition:all .15s;}
+.mb:hover{border-color:var(--primary);color:var(--primary);}
+.mb.on{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:700;box-shadow:var(--glow);}
 
-.prog-row{display:flex;align-items:center;gap:10px;margin-bottom:.65rem;}
+.prog-row{display:flex;align-items:center;gap:11px;margin-bottom:.7rem;}
 .prog-row:last-child{margin-bottom:0;}
-.plbl{font-size:11px;color:var(--ts);font-weight:600;width:120px;flex-shrink:0;}
-.pbar-wrap{flex:1;height:6px;background:var(--sur2);border-radius:99px;overflow:hidden;}
-.pbar{height:100%;border-radius:99px;}
+.plbl{font-size:11.5px;color:var(--ts);font-weight:600;width:130px;flex-shrink:0;}
+.pbar-wrap{flex:1;height:8px;background:rgba(47,43,61,.08);border-radius:99px;overflow:hidden;}
+.pbar{height:100%;border-radius:99px;transition:width .4s ease;}
 .ppct{font-family:"DM Mono",monospace;font-size:11.5px;font-weight:700;width:52px;text-align:right;flex-shrink:0;}
 
-.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--bdr);border:1px solid var(--bdr);border-radius:var(--radius-sm);overflow:hidden;}
-.ccard{background:var(--sur);border:none;border-radius:0;padding:.8rem .9rem;position:relative;}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.9rem;}
+.ccard{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius);padding:.9rem 1rem;position:relative;box-shadow:var(--shadow-md);transition:transform .16s ease,box-shadow .16s ease;}
+.ccard:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
 
-.footer{margin-top:2.1rem;font-size:9.5px;color:var(--tm);font-family:"DM Mono",monospace;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;padding-top:1rem;border-top:1px solid var(--bdr);}
+#raw-wrap{background:var(--sur);box-shadow:var(--shadow-md);}
+.footer{margin-top:2.2rem;font-size:9.5px;color:var(--tm);font-family:"DM Mono",monospace;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;padding-top:1rem;border-top:1px solid var(--bdr);}
 
+/* ── 로그인 게이트 ── */
 #gate{position:fixed;inset:0;z-index:1000;background:
-    radial-gradient(circle at 15% 15%,rgba(255,255,255,.16),transparent 45%),
-    radial-gradient(circle at 85% 90%,rgba(21,23,30,.14),transparent 55%),
-    linear-gradient(150deg,#5C63A8 0%,var(--head-bg) 42%,var(--head-bg2) 75%,#9AA2D9 100%);
+    radial-gradient(circle at 12% 18%,rgba(115,103,240,.28),transparent 42%),
+    radial-gradient(circle at 88% 84%,rgba(0,186,209,.22),transparent 46%),
+    linear-gradient(150deg,#F8F7FA 0%,#EFEDFB 48%,#E9E7FA 100%);
   display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;}
 #gate.hidden{display:none;}
-#gate-box{background:var(--sur);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:2rem 1.9rem;width:100%;max-width:320px;}
-#gate-box h1{font-size:1.05rem;font-weight:800;color:var(--ink);margin-bottom:.3rem;}
-#gate-box p{font-size:11.5px;color:var(--ts);margin-bottom:1.2rem;}
-#gate-pw{width:100%;padding:.65rem .8rem;font-size:14px;border:1px solid var(--bdr2);border-radius:var(--radius-sm);margin-bottom:.7rem;background:var(--sur2);color:var(--ink);font-family:"DM Mono",monospace;}
-#gate-pw:focus{outline:none;border-color:var(--accent);}
-#gate-btn{width:100%;padding:.65rem .8rem;font-size:13px;font-weight:700;border:none;border-radius:var(--radius-sm);background:var(--accent);color:#fff;cursor:pointer;transition:background .15s;}
-#gate-btn:hover{background:var(--accent2);}
-#gate-err{font-size:11.5px;color:#E2685C;margin-top:.6rem;min-height:1em;}
-#gate-ci{margin-top:1.1rem;background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);padding:.6rem 1.1rem;}
+#gate-box{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2.1rem 2rem;width:100%;max-width:340px;}
+#gate-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(72deg,var(--primary) 20%,rgba(115,103,240,.72) 100%);box-shadow:var(--glow);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;}
+#gate-mark svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+#gate-box h1{font-size:1.05rem;font-weight:800;color:var(--ink);margin-bottom:.35rem;letter-spacing:-.02em;}
+#gate-box p{font-size:11.5px;color:var(--ts);margin-bottom:1.25rem;}
+#gate-pw{width:100%;padding:.7rem .85rem;font-size:14px;border:1px solid var(--bdr2);border-radius:var(--radius-sm);margin-bottom:.75rem;background:var(--sur);color:var(--ink);font-family:"DM Mono",monospace;transition:border-color .15s,box-shadow .15s;}
+#gate-pw:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(115,103,240,.14);}
+#gate-btn{width:100%;padding:.7rem .85rem;font-size:13px;font-weight:700;border:none;border-radius:var(--radius-sm);background:var(--primary);color:#fff;cursor:pointer;box-shadow:var(--glow);transition:background .15s,box-shadow .15s;}
+#gate-btn:hover{background:var(--primary-d);box-shadow:0 4px 12px rgba(115,103,240,.4);}
+#gate-err{font-size:11.5px;color:var(--danger);margin-top:.65rem;min-height:1em;}
+#gate-ci{margin-top:1.25rem;background:#fff;border:1px solid var(--bdr);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);padding:.6rem 1.1rem;}
 #gate-ci img{display:block;height:30px;width:auto;}
 #app{display:none;}
 #app.ready{display:block;}
+
+@media(max-width:900px){
+  /* 상품별 주요 변동: 2단 그리드(인라인 스타일) → 1단 */
+  #week-prod-changes>div{grid-template-columns:1fr!important;}
+  .box{min-width:0;overflow-x:auto;}
+}
+@media(max-width:1100px){
+  .sidebar{transform:translateX(-100%);box-shadow:var(--shadow-lg);}
+  body.side-open .sidebar{transform:none;}
+  .main{margin-left:0;}
+  .hamb{display:inline-flex;}
+  .topbar{margin:.7rem .9rem 0;}
+  .wrap{padding:1.1rem .9rem 2.4rem;}
+  .g4{grid-template-columns:repeat(2,1fr);gap:.8rem;}
+}
+@media(max-width:620px){
+  .g4{grid-template-columns:1fr;}
+  .hdr h1{font-size:.95rem;}
+  .topbar{padding:.7rem .85rem;}
+  .plbl{width:96px;font-size:11px;}
+  .kv{font-size:1.15rem;overflow-wrap:anywhere;}
+  .ks,.kl{overflow-wrap:anywhere;}
+  .tbl{overflow-x:auto;}
+}
 </style>
 
 
@@ -116,33 +175,46 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
 <body>
 <div id="gate">
   <div id="gate-box">
+    <div id="gate-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
     <h1>'26년 미디어사업실 KPI 달성현황</h1>
     <p>비밀번호를 입력해 주세요.</p>
-    <input type="password" id="gate-pw" placeholder="비밀번호" autocomplete="off">
+    <input type="password" id="gate-pw" placeholder="비밀번호" autocomplete="off" aria-label="비밀번호">
     <button id="gate-btn" onclick="tryUnlock()">입장</button>
-    <div id="gate-err"></div>
+    <div id="gate-err" role="alert"></div>
   </div>
   <div id="gate-ci"><img src="assets/incross_sk-networks_ci_cropped.png" alt="인크로스 | SK networks"></div>
 </div>
 <div id="app">
-<div class="sticky">
-  <div class="hdr">
-    <div><h1>'26년 미디어사업실 KPI 달성현황</h1><p id="hdr-sub">구글 시트 2026년_미디어사업실 매출 관리_v2.0 &nbsp;|&nbsp; R6 취급고 KPI · R7 매출 KPI</p></div>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;align-self:flex-start;gap:10px;flex-shrink:0;">
-      <img src="assets/incross_sk-networks_ci_cropped.png" alt="인크로스 | SK networks" style="height:30px;width:auto;opacity:.92;">
-      <div style="display:flex;gap:6px;">
-        <div class="bdg bg"><span class="dot"></span><span id="bdg-b">취급고 -</span></div>
-        <div id="bdg-r-wrap" class="bdg bd"><span class="dot"></span><span id="bdg-r">매출 -</span></div>
-      </div>
-    </div>
+<aside class="sidebar" aria-label="주 메뉴">
+  <div class="brand">
+    <img src="assets/incross_sk-networks_ci_cropped.png" alt="인크로스 | SK networks">
+    <div class="btitle">미디어사업실<br>매출관리 대시보드</div>
+    <div class="bsub">2026 KPI REPORT</div>
   </div>
-  <div class="nav">
-    <button id="nb-kpi" class="nb on" onclick="go('kpi')">📊 KPI 달성현황</button>
-    <button id="nb-biz" class="nb" onclick="go('biz')">📋 미디어사업팀</button>
-    <button id="nb-mkt" class="nb" onclick="go('mkt')">📋 미디어마케팅팀</button>
-    <button id="nb-ag"  class="nb" onclick="go('ag')">🏢 대행사별 매출</button>
-    <button id="nb-camp"class="nb" onclick="go('camp')">🗂 월별 캠페인</button>
-    <button id="nb-raw" class="nb" onclick="go('raw')">📋 KPI 데이터</button>
+  <nav class="nav">
+    <div class="navlbl">Dashboards</div>
+    <button id="nb-kpi" class="nb on" onclick="go('kpi')"><svg viewBox="0 0 24 24"><path d="M3 20h18"/><rect x="5" y="11" width="3.5" height="6" rx="1"/><rect x="10.25" y="7" width="3.5" height="10" rx="1"/><rect x="15.5" y="13" width="3.5" height="4" rx="1"/></svg><span>KPI 달성현황</span></button>
+    <div class="navlbl">팀별 실적</div>
+    <button id="nb-biz" class="nb" onclick="go('biz')"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12h18"/></svg><span>미디어사업팀</span></button>
+    <button id="nb-mkt" class="nb" onclick="go('mkt')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span>미디어마케팅팀</span></button>
+    <div class="navlbl">상세 분석</div>
+    <button id="nb-ag" class="nb" onclick="go('ag')"><svg viewBox="0 0 24 24"><path d="M4 20V6.5A1.5 1.5 0 0 1 5.5 5h7A1.5 1.5 0 0 1 14 6.5V20"/><path d="M14 11h4.5A1.5 1.5 0 0 1 20 12.5V20"/><path d="M3 20h18"/><path d="M7.5 9h3M7.5 13h3"/></svg><span>대행사별 매출</span></button>
+    <button id="nb-camp" class="nb" onclick="go('camp')"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8.5 3.5v3M15.5 3.5v3"/></svg><span>월별 캠페인</span></button>
+    <button id="nb-raw" class="nb" onclick="go('raw')"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M9.5 9.5v10M3.5 14.5h17"/></svg><span>KPI 데이터</span></button>
+  </nav>
+  <div class="sidefoot">2026년_미디어사업실<br>매출 관리_v2.0</div>
+</aside>
+<div id="side-ovl" onclick="toggleSide()"></div>
+<div class="main">
+<div class="topbar">
+  <div class="hdr">
+    <button class="hamb" onclick="toggleSide()" aria-label="메뉴 열기"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div><h1>'26년 미디어사업실 KPI 달성현황</h1><p>R6 취급고 KPI · R7 매출 KPI</p></div>
+  </div>
+  <div class="hdr-right">
+    <span class="upd" id="hdr-sub"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg><span id="hdr-time">마지막 업데이트: -</span></span>
+    <div class="bdg bg"><span class="dot"></span><span id="bdg-b">취급고 -</span></div>
+    <div id="bdg-r-wrap" class="bdg bd"><span class="dot"></span><span id="bdg-r">매출 -</span></div>
   </div>
 </div>
 <div class="wrap">
@@ -163,12 +235,12 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
   </div>
   <div class="box">
     <p id="mc-title" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p>
-    <div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div>
+    <div class="leg"><span><span class="lsq" style="background:#7367F0;"></span>KPI</span><span><span class="lsq" style="background:#28C76F;"></span>실적</span><span><span class="lln" style="background:#FF9F43;"></span>달성률</span></div>
     <div style="position:relative;height:210px;"><canvas id="mc"></canvas></div>
   </div>
   <div class="sec">분기별 전체 달성현황</div>
   <div class="box">
-    <div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div>
+    <div class="leg"><span><span class="lsq" style="background:#7367F0;"></span>KPI</span><span><span class="lsq" style="background:#28C76F;"></span>실적</span><span><span class="lln" style="background:#FF9F43;"></span>달성률</span></div>
     <div style="position:relative;height:200px;"><canvas id="qtc"></canvas></div>
   </div>
   <div class="sec">취급고 — 상품별 분기 달성률(%)</div>
@@ -190,16 +262,16 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
     <button class="qb" id="biz-bb" onclick="switchTeam('biz','b')">취급고</button>
     <button class="qb off" id="biz-rb" onclick="switchTeam('biz','r')">매출</button>
   </div>
-  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-mc"></canvas></div></div>
-  <div class="sec">상품별 취급고 달성 (1~7월)</div>
-  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-pb"></canvas></div></div>
-  <div class="sec">상품별 매출 달성 (1~7월)</div>
-  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#E3A857;"></span>실적</span><span><span class="lln" style="background:#E2685C;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-pr"></canvas></div></div>
-  <div class="sec">상품별 실적 상세 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#7367F0;"></span>KPI</span><span><span class="lsq" style="background:#28C76F;"></span>실적</span><span><span class="lln" style="background:#FF9F43;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-mc"></canvas></div></div>
+  <div class="sec" id="biz-sec-b">상품별 취급고 달성 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#7367F0;"></span>KPI</span><span><span class="lsq" style="background:#28C76F;"></span>실적</span><span><span class="lln" style="background:#FF9F43;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-pb"></canvas></div></div>
+  <div class="sec" id="biz-sec-r">상품별 매출 달성 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#7367F0;"></span>KPI</span><span><span class="lsq" style="background:#FF9F43;"></span>실적</span><span><span class="lln" style="background:#EA5455;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="biz-pr"></canvas></div></div>
+  <div class="sec" id="biz-sec-tbl">상품별 실적 상세 (1~7월)</div>
   <div class="tbl"><table><thead><tr><th>상품</th><th>취급고KPI</th><th>취급고실적</th><th>취급고달성률</th><th>매출KPI</th><th>매출실적</th><th>매출달성률</th></tr></thead><tbody id="biz-tbl"></tbody></table></div>
   <div class="sec">상품별 월별 달성현황</div>
   <div id="biz-ptabs" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.45rem;"></div>
-  <div class="box"><p id="biz-pm-t" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p><div class="leg"><span><span class="lsq" style="background:rgba(37,99,235,.3);"></span>취급고KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>취급고실적</span><span><span class="lsq" style="background:rgba(251,191,36,.4);"></span>매출KPI</span><span><span class="lsq" style="background:#E3A857;"></span>매출실적</span><span><span class="lln" style="background:#E2685C;"></span>달성률</span></div><div style="position:relative;height:240px;"><canvas id="biz-pm"></canvas></div></div>
+  <div class="box"><p id="biz-pm-t" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p><div class="leg"><span><span class="lsq" style="background:rgba(115,103,240,.3);"></span>취급고KPI</span><span><span class="lsq" style="background:#28C76F;"></span>취급고실적</span><span><span class="lsq" style="background:rgba(255,159,67,.32);"></span>매출KPI</span><span><span class="lsq" style="background:#FF9F43;"></span>매출실적</span><span><span class="lln" style="background:#EA5455;"></span>달성률</span></div><div style="position:relative;height:240px;"><canvas id="biz-pm"></canvas></div></div>
 </div>
 
 <!-- 미디어마케팅팀 -->
@@ -211,16 +283,16 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
     <button class="qb" id="mkt-bb" onclick="switchTeam('mkt','b')">취급고</button>
     <button class="qb off" id="mkt-rb" onclick="switchTeam('mkt','r')">매출</button>
   </div>
-  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-mc"></canvas></div></div>
-  <div class="sec">상품별 취급고 달성 (1~7월)</div>
-  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>실적</span><span><span class="lln" style="background:#E3A857;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-pb"></canvas></div></div>
-  <div class="sec">상품별 매출 달성 (1~7월)</div>
-  <div class="box"><div class="leg"><span><span class="lsq" style="background:#6683E0;"></span>KPI</span><span><span class="lsq" style="background:#E3A857;"></span>실적</span><span><span class="lln" style="background:#E2685C;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-pr"></canvas></div></div>
-  <div class="sec">상품별 실적 상세 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#7367F0;"></span>KPI</span><span><span class="lsq" style="background:#28C76F;"></span>실적</span><span><span class="lln" style="background:#FF9F43;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-mc"></canvas></div></div>
+  <div class="sec" id="mkt-sec-b">상품별 취급고 달성 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#7367F0;"></span>KPI</span><span><span class="lsq" style="background:#28C76F;"></span>실적</span><span><span class="lln" style="background:#FF9F43;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-pb"></canvas></div></div>
+  <div class="sec" id="mkt-sec-r">상품별 매출 달성 (1~7월)</div>
+  <div class="box"><div class="leg"><span><span class="lsq" style="background:#7367F0;"></span>KPI</span><span><span class="lsq" style="background:#FF9F43;"></span>실적</span><span><span class="lln" style="background:#EA5455;"></span>달성률</span></div><div style="position:relative;height:210px;"><canvas id="mkt-pr"></canvas></div></div>
+  <div class="sec" id="mkt-sec-tbl">상품별 실적 상세 (1~7월)</div>
   <div class="tbl"><table><thead><tr><th>상품</th><th>취급고KPI</th><th>취급고실적</th><th>취급고달성률</th><th>매출KPI</th><th>매출실적</th><th>매출달성률</th></tr></thead><tbody id="mkt-tbl"></tbody></table></div>
   <div class="sec">상품별 월별 달성현황</div>
   <div id="mkt-ptabs" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.45rem;"></div>
-  <div class="box"><p id="mkt-pm-t" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p><div class="leg"><span><span class="lsq" style="background:rgba(37,99,235,.3);"></span>취급고KPI</span><span><span class="lsq" style="background:#4FB88A;"></span>취급고실적</span><span><span class="lsq" style="background:rgba(251,191,36,.4);"></span>매출KPI</span><span><span class="lsq" style="background:#E3A857;"></span>매출실적</span><span><span class="lln" style="background:#E2685C;"></span>달성률</span></div><div style="position:relative;height:240px;"><canvas id="mkt-pm"></canvas></div></div>
+  <div class="box"><p id="mkt-pm-t" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p><div class="leg"><span><span class="lsq" style="background:rgba(115,103,240,.3);"></span>취급고KPI</span><span><span class="lsq" style="background:#28C76F;"></span>취급고실적</span><span><span class="lsq" style="background:rgba(255,159,67,.32);"></span>매출KPI</span><span><span class="lsq" style="background:#FF9F43;"></span>매출실적</span><span><span class="lln" style="background:#EA5455;"></span>달성률</span></div><div style="position:relative;height:240px;"><canvas id="mkt-pm"></canvas></div></div>
 </div>
 
 <!-- 대행사별 매출 -->
@@ -229,7 +301,7 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
   <div id="ag-ptabs" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.7rem;"></div>
   <div id="ag-sum" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-bottom:.85rem;"></div>
   <div class="box"><p id="ag-title" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p><div id="ag-leg" class="leg"></div><div style="position:relative;height:230px;"><canvas id="ag-mc"></canvas></div></div>
-  <div class="box"><p style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;">연간 누적 순매출 (만원)</p><div style="position:relative;height:250px;"><canvas id="ag-tc"></canvas></div></div>
+  <div class="box"><p style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;">연간 누적 순매출 (만원)</p><div style="position:relative;height:520px;"><canvas id="ag-tc"></canvas></div></div>
   <div class="tbl" style="overflow-x:auto;"><table><thead><tr id="ag-th"></tr></thead><tbody id="ag-tb"></tbody></table></div>
 </div>
 
@@ -253,12 +325,31 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
   <span>다윈=시작월 / 나머지=세금계산서발행월 / Stellaize 상반기 진행바=P66셀 / 비즈챗=렙사기준</span>
 </div>
 </div><!-- /wrap -->
+</div><!-- /main -->
 </div><!-- /app -->
 <script>
 var TOTAL,PRODS,BIZ,MKT,TKPIB,TKPIR,TACTB,TACTR,TQKPI,TQACT,STELLA,N,AG,CD,WEEKCMP,WEEKPROD,DATA;
 const M=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 const QQ=['Q1','Q2','Q3','Q4'];
 
+// ── Chart.js 전역 스타일 (디자인 시스템과 동일 톤) ──
+if(window.Chart){
+  Chart.defaults.font.family='"Public Sans","Noto Sans KR",sans-serif';
+  Chart.defaults.font.size=11;
+  Chart.defaults.color='#6F6B7D';
+  Chart.defaults.borderColor='rgba(47,43,61,.07)';
+  Chart.defaults.plugins.legend.labels.usePointStyle=true;
+  Chart.defaults.plugins.legend.labels.pointStyle='circle';
+  Chart.defaults.plugins.legend.labels.boxWidth=8;
+  Chart.defaults.plugins.legend.labels.boxHeight=8;
+  Chart.defaults.plugins.legend.labels.padding=14;
+  Chart.defaults.plugins.tooltip.backgroundColor='#2F2B3D';
+  Chart.defaults.plugins.tooltip.padding=10;
+  Chart.defaults.plugins.tooltip.cornerRadius=8;
+  Chart.defaults.plugins.tooltip.boxPadding=4;
+  Chart.defaults.datasets.bar.borderRadius=4;
+  Chart.defaults.datasets.bar.maxBarThickness=34;
+}
 
 
 
@@ -274,20 +365,22 @@ const QQ=['Q1','Q2','Q3','Q4'];
 
 
 
-const PC={'비즈링':'#6683E0','들리고':'#5CB897','들리Go':'#5CB897','옥외광고':'#7C8798','문자B2G':'#C99A5C','문자&B2G':'#C99A5C','용역':'#9080D6','다윈':'#A78BE0','ASUM':'#4FB88A','비즈챗':'#6FA0E8','Stellaize':'#E2685C','RMN':'#E3A857','기타':'#8891A3','리사이즈애드':'#5CAEC0'};
-const AGC={'비즈챗':'#6FA0E8','ASUM':'#4FB88A','RMN':'#E3A857','Stellaize':'#E2685C','다윈':'#9080D6','들리Go':'#5CB897','옥외광고':'#7C8798','문자&B2G':'#C99A5C','비즈링':'#6683E0'};
-const PAL=['#6FA0E8','#4FB88A','#E3A857','#E2685C','#9080D6','#5CB897','#C99A5C','#7C8798','#6683E0','#A78BE0'];
+
+const PC={'비즈링':'#7367F0','들리고':'#28C76F','들리Go':'#28C76F','옥외광고':'#808390','문자B2G':'#FFAB2D','문자&B2G':'#FFAB2D','용역':'#9E95F5','다윈':'#A78BFA','ASUM':'#00BAD1','비즈챗':'#16B1FF','Stellaize':'#EA5455','RMN':'#FF9F43','기타':'#A5A3AE','리사이즈애드':'#0FBFB0'};
+const AGC={'비즈챗':'#16B1FF','ASUM':'#00BAD1','RMN':'#FF9F43','Stellaize':'#EA5455','다윈':'#A78BFA','들리Go':'#28C76F','옥외광고':'#808390','문자&B2G':'#FFAB2D','비즈링':'#7367F0'};
+const PAL=['#7367F0','#28C76F','#FF9F43','#EA5455','#00BAD1','#16B1FF','#A78BFA','#FFAB2D','#808390','#0FBFB0'];
 
 
 function fmt(v){return v>=10000?Math.round(v/10000)+'억':v.toLocaleString()+'만';}
 function pct(a,k){return k>0?Math.round(a/k*1000)/10:0;}
 function s3(a,s){return a.slice(s,s+3).reduce((x,y)=>x+y,0);}
-function rc(v){return v>=100?'#4FB88A':v>=70?'#E3A857':v>0?'#E2685C':'#A6ACBD';}
+function rc(v){return v>=100?'#28C76F':v>=70?'#FF9F43':v>0?'#EA5455':'#A5A3AE';}
 function f0(v){return(!v&&v!==0)?'-':Math.round(v).toLocaleString();}
 
 // ── 페이지 전환 ──
 const PAGES=['kpi','biz','mkt','ag','camp','raw'];
 function go(p){
+  document.body.classList.remove('side-open');
   PAGES.forEach(function(k){
     document.getElementById('pg-'+k).classList.toggle('active',k===p);
     document.getElementById('nb-'+k).classList.toggle('on',k===p);
@@ -303,7 +396,7 @@ function mkBL(id,labels,kpi,act,rates,bc,lc){
   return new Chart(document.getElementById(id),{
     type:'bar',
     data:{labels:labels,datasets:[
-      {type:'bar',label:'KPI',data:kpi,backgroundColor:'#6683E0',borderWidth:0,order:2},
+      {type:'bar',label:'KPI',data:kpi,backgroundColor:'#7367F0',borderWidth:0,order:2},
       {type:'bar',label:'실적',data:act,backgroundColor:bc,borderWidth:0,order:1},
       {type:'line',label:'달성률',data:rates,borderColor:lc,backgroundColor:'transparent',pointBackgroundColor:lc,pointRadius:3,borderWidth:2,tension:0.3,yAxisID:'y2',order:0}
     ]},
@@ -311,8 +404,8 @@ function mkBL(id,labels,kpi,act,rates,bc,lc){
       responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.yAxisID==='y2'?' 달성률: '+(ctx.raw||'-')+'%':' '+ctx.dataset.label+': '+(ctx.raw||0).toLocaleString()+'만';}  }}},
       scales:{
-        x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10},color:'#5A5E6C'},grid:{display:false}},
-        y:{ticks:{callback:fmt,font:{size:10},color:'#5A5E6C'},grid:{color:'rgba(17,17,26,.055)'}},
+        x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10},color:'#6F6B7D'},grid:{display:false}},
+        y:{ticks:{callback:fmt,font:{size:10},color:'#6F6B7D'},grid:{color:'rgba(47,43,61,.07)'}},
         y2:{position:'right',ticks:{callback:function(v){return v+'%';},font:{size:10},color:lc},grid:{display:false},min:0,suggestedMax:200}
       }
     }
@@ -324,7 +417,7 @@ var kpiSeg='b', kpiChart=null;
 
 function buildKPICards(){
   var t=TOTAL;
-  var pal=['#6FA0E8','#E3A857','#4FB88A','#4FB88A'];
+  var pal=['#00BAD1','#FF9F43','#28C76F','#28C76F'];
   var kb7=TKPIB.slice(0,N).reduce(function(a,b){return a+b;},0);
   var ab7=TACTB.slice(0,N).reduce(function(a,b){return a+b;},0);
   var kr7=TKPIR.slice(0,N).reduce(function(a,b){return a+b;},0);
@@ -334,10 +427,10 @@ function buildKPICards(){
   document.getElementById('bdg-r').textContent='매출 '+rrt+'%';
   document.getElementById('bdg-r-wrap').className='bdg '+(rrt>=100?'bg':'bd');
   document.getElementById('kpi-cards').innerHTML=
-    '<div class="card" style="--ac:#6FA0E8;"><div class="kl">연간 취급고 KPI</div><div class="kv" style="color:#6FA0E8;">'+(t.kpi_b_ann*10000).toLocaleString()+'</div><div class="ks">상반기 '+(t.kpi_b_h1*10000).toLocaleString()+' / 하반기 '+(t.kpi_b_h2*10000).toLocaleString()+'</div></div>'+
-    '<div class="card" style="--ac:#E3A857;"><div class="kl">연간 매출 KPI</div><div class="kv" style="color:#E3A857;">'+(t.kpi_r_ann*10000).toLocaleString()+'</div><div class="ks">상반기 '+(t.kpi_r_h1*10000).toLocaleString()+' / 하반기 '+(t.kpi_r_h2*10000).toLocaleString()+'</div></div>'+
-    '<div class="card" style="--ac:#4FB88A;"><div class="kl">1~7월 취급고 달성률</div><div class="kv" style="color:'+rc(brt)+';">'+brt+'%</div><div class="ks">'+(ab7*10000).toLocaleString()+' / KPI '+(kb7*10000).toLocaleString()+'</div></div>'+
-    '<div class="card" style="--ac:'+rc(rrt)+';"><div class="kl">1~7월 매출 달성률</div><div class="kv" style="color:'+rc(rrt)+';">'+rrt+'%</div><div class="ks">'+(ar7*10000).toLocaleString()+' / KPI '+(kr7*10000).toLocaleString()+'</div></div>';
+    '<div class="card" style="--ac:#00BAD1;"><div class="kl">연간 취급고 KPI</div><div class="kv" style="color:#00BAD1;">'+(t.kpi_b_ann*10000).toLocaleString()+'</div><div class="ks">상반기 '+(t.kpi_b_h1*10000).toLocaleString()+' / 하반기 '+(t.kpi_b_h2*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:#FF9F43;"><div class="kl">연간 매출 KPI</div><div class="kv" style="color:#FF9F43;">'+(t.kpi_r_ann*10000).toLocaleString()+'</div><div class="ks">상반기 '+(t.kpi_r_h1*10000).toLocaleString()+' / 하반기 '+(t.kpi_r_h2*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:#28C76F;"><div class="kl">1~'+N+'월 취급고 달성률</div><div class="kv" style="color:'+rc(brt)+';">'+brt+'%</div><div class="ks">'+(ab7*10000).toLocaleString()+' / KPI '+(kb7*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:'+rc(rrt)+';"><div class="kl">1~'+N+'월 매출 달성률</div><div class="kv" style="color:'+rc(rrt)+';">'+rrt+'%</div><div class="ks">'+(ar7*10000).toLocaleString()+' / KPI '+(kr7*10000).toLocaleString()+'</div></div>';
 }
 
 function buildQBox(){
@@ -363,7 +456,7 @@ function buildWeekMetrics(){
   html+='</tr></thead><tbody>';
   W.rows.forEach(function(r){
     var up=r.cur>=r.prev;
-    var dc=up?'#4FB88A':'#E2685C';
+    var dc=up?'#28C76F':'#EA5455';
     var pf,cf,df;
     if(r.unit==='pct'){
       pf=r.prev+'%'; cf=r.cur+'%';
@@ -372,16 +465,16 @@ function buildWeekMetrics(){
       pf=r.prev.toLocaleString(); cf=r.cur.toLocaleString();
       df=(up?'▲':'▼')+Math.abs(r.cur-r.prev).toLocaleString();
     }
-    html+='<tr style="border-bottom:.5px solid var(--bdr);">';
+    html+='<tr style="border-bottom:1px solid var(--bdr);">';
     html+='<td style="padding:.55rem .8rem;font-weight:600;">'+r.label+'</td>';
     html+='<td style="padding:.55rem .8rem;text-align:right;font-family:DM Mono,monospace;color:var(--tm);">'+pf+'</td>';
     html+='<td style="padding:.55rem .8rem;text-align:right;font-family:DM Mono,monospace;font-weight:600;">'+cf+'</td>';
     html+='<td style="padding:.55rem .8rem;text-align:right;">';
-    html+='<span class="bdg" style="border-color:transparent;background:'+(up?'rgba(12,158,110,.1)':'rgba(220,38,38,.1)')+';color:'+dc+';font-family:DM Mono,monospace;">'+df+'</span>';
+    html+='<span class="bdg" style="border-color:transparent;background:'+(up?'rgba(40,199,111,.14)':'rgba(234,84,85,.14)')+';color:'+dc+';font-family:DM Mono,monospace;">'+df+'</span>';
     html+='</td></tr>';
   });
   html+='</tbody></table></div>';
-  if(W.note){ html+='<div style="margin-top:.6rem;padding:.6rem .8rem;background:rgba(217,119,6,.055);border:1px solid rgba(217,119,6,.25);border-radius:8px;font-size:11px;color:#92400e;line-height:1.5;">⚠️ '+W.note+'</div>'; }
+  if(W.note){ html+='<div style="margin-top:.6rem;padding:.6rem .8rem;background:rgba(255,159,67,.09);border:1px solid rgba(255,159,67,.35);border-radius:8px;font-size:11px;color:#9B5A12;line-height:1.5;">⚠️ '+W.note+'</div>'; }
   document.getElementById('week-metrics').innerHTML=html;
 }
 
@@ -392,19 +485,19 @@ function buildWeekProdChanges(){
     if(items.length===0){ html+='<div style="font-size:11px;color:var(--tm);padding:.3rem 0;">유의미한 변동 없음</div>'; }
     items.forEach(function(p,i){
       var isNew=p.prev===0;
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;'+(i<items.length-1?'border-bottom:.5px solid var(--bdr);':'')+'">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;'+(i<items.length-1?'border-bottom:1px solid var(--bdr);':'')+'">';
       html+='<span style="font-size:12px;">'+p.name+' '+p.kind+' ('+p.month+')</span>';
       html+='<span style="font-size:11px;font-family:DM Mono,monospace;text-align:right;">';
-      html+='<span style="color:var(--tm);">'+p.prev.toLocaleString()+'</span> → <b style="color:#1a2140;">'+p.cur.toLocaleString()+'</b>';
-      if(isNew) html+=' <span style="color:#E3A857;font-weight:600;">신규</span>';
+      html+='<span style="color:var(--tm);">'+p.prev.toLocaleString()+'</span> → <b style="color:#2F2B3D;">'+p.cur.toLocaleString()+'</b>';
+      if(isNew) html+=' <span style="color:#FF9F43;font-weight:600;">신규</span>';
       html+='</span></div>';
     });
     html+='</div>';
     return html;
   }
   var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
-  html+=col(WEEKPROD.mkt,'미디어마케팅팀','#6FA0E8');
-  html+=col(WEEKPROD.biz,'미디어사업팀','#4FB88A');
+  html+=col(WEEKPROD.mkt,'미디어마케팅팀','#00BAD1');
+  html+=col(WEEKPROD.biz,'미디어사업팀','#28C76F');
   html+='</div>';
   document.getElementById('week-prod-changes').innerHTML=html;
 }
@@ -431,7 +524,7 @@ function buildProg(){
 function buildMonthChart(){
   var kpi=kpiSeg==='b'?TKPIB:TKPIR, act=kpiSeg==='b'?TACTB:TACTR;
   var rates=kpi.map(function(k,i){return k>0?pct(act[i],k):null;});
-  var bc=kpiSeg==='b'?'#4FB88A':'#E3A857', lc=kpiSeg==='b'?'#E3A857':'#E2685C';
+  var bc=kpiSeg==='b'?'#28C76F':'#FF9F43', lc=kpiSeg==='b'?'#FF9F43':'#EA5455';
   document.getElementById('mc-title').textContent='월별 '+(kpiSeg==='b'?'취급고':'매출')+' KPI vs 실적 (만원)';
   if(kpiChart) kpiChart.destroy();
   kpiChart=mkBL('mc',M,kpi,act,rates,bc,lc);
@@ -451,13 +544,13 @@ function buildQTotal(){
   new Chart(document.getElementById('qtc'),{
     type:'bar',
     data:{labels:QQ,datasets:[
-      {type:'bar',label:'KPI',data:kq,backgroundColor:'#6683E0',borderWidth:0,order:2},
-      {type:'bar',label:'실적',data:aq,backgroundColor:'#4FB88A',borderWidth:0,order:1},
-      {type:'line',label:'달성률',data:rates,borderColor:'#E3A857',backgroundColor:'transparent',pointBackgroundColor:'#E3A857',pointRadius:5,borderWidth:2,yAxisID:'y2',order:0}
+      {type:'bar',label:'KPI',data:kq,backgroundColor:'#7367F0',borderWidth:0,order:2},
+      {type:'bar',label:'실적',data:aq,backgroundColor:'#28C76F',borderWidth:0,order:1},
+      {type:'line',label:'달성률',data:rates,borderColor:'#FF9F43',backgroundColor:'transparent',pointBackgroundColor:'#FF9F43',pointRadius:5,borderWidth:2,yAxisID:'y2',order:0}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.yAxisID==='y2'?' 달성률: '+ctx.raw+'%':' '+ctx.dataset.label+': '+(Math.round((ctx.raw||0)/100000000*100)/100)+'억';}}}},
-      scales:{x:{grid:{display:false}},y:{ticks:{callback:function(v){return(Math.round(v/100000000*10)/10)+'억';},font:{size:10}},grid:{color:'rgba(17,17,26,.055)'}},y2:{position:'right',ticks:{callback:function(v){return v+'%';},font:{size:10},color:'#E3A857'},grid:{display:false},min:0}}
+      scales:{x:{grid:{display:false}},y:{ticks:{callback:function(v){return(Math.round(v/100000000*10)/10)+'억';},font:{size:10}},grid:{color:'rgba(47,43,61,.07)'}},y2:{position:'right',ticks:{callback:function(v){return v+'%';},font:{size:10},color:'#FF9F43'},grid:{display:false},min:0}}
     }
   });
 }
@@ -468,7 +561,7 @@ function buildQProd(id,seg){
     {'비즈링':PRODS['비즈링'].bill,'들리고':PRODS['들리고'].bill,'문자B2G':PRODS['문자B2G'].bill,'옥외광고':PRODS['옥외광고'].bill,'ASUM':PRODS['ASUM'].bill,'비즈챗':PRODS['비즈챗'].bill,'Stellaize':PRODS['Stellaize'].bill,'RMN':PRODS['RMN'].bill}:
     {'비즈링':PRODS['비즈링'].rev,'들리고':PRODS['들리고'].rev,'문자B2G':PRODS['문자B2G'].rev,'옥외광고':PRODS['옥외광고'].rev,'용역':PRODS['용역'].rev,'다윈':PRODS['다윈'].rev,'ASUM':PRODS['ASUM'].rev,'비즈챗':PRODS['비즈챗'].rev,'Stellaize':PRODS['Stellaize'].rev,'RMN':PRODS['RMN'].rev};
   var labels=Object.keys(rmap);
-  var pal_q=['rgba(37,99,235,.8)','rgba(12,158,110,.8)','rgba(217,119,6,.8)','rgba(220,38,38,.8)'];
+  var pal_q=['rgba(115,103,240,.85)','rgba(40,199,111,.85)','rgba(255,159,67,.9)','rgba(234,84,85,.85)'];
   var ds=QQ.map(function(q,qi){
     return {label:q,backgroundColor:pal_q[qi],borderWidth:0,data:labels.map(function(p){
       if(seg==='b'&&p==='Stellaize'&&qi===0) return STELLA;
@@ -481,7 +574,7 @@ function buildQProd(id,seg){
   new Chart(document.getElementById(id),{type:'bar',data:{labels:labels,datasets:ds},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{labels:{font:{size:10}}}},
-      scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:0},grid:{display:false}},y:{ticks:{callback:function(v){return v+'%';},font:{size:10}},grid:{color:'rgba(17,17,26,.055)'},min:0}}
+      scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:0},grid:{display:false}},y:{ticks:{callback:function(v){return v+'%';},font:{size:10}},grid:{color:'rgba(47,43,61,.07)'},min:0}}
     }
   });
 }
@@ -525,10 +618,10 @@ function buildTeam(tm){
   var ar=D.act_r.slice(0,N).reduce(function(a,b){return a+b;},0);
   var br=pct(ab,kb), rr=pct(ar,kr);
   document.getElementById(tm+'-cards').innerHTML=
-    '<div class="card" style="--ac:#6FA0E8;"><div class="kl">취급고 KPI (1~7월)</div><div class="kv" style="color:#6FA0E8;">'+(kb*10000).toLocaleString()+'</div><div class="ks">연간 '+D.kpi_b.reduce(function(a,b){return a+b;},0)*10000+'</div></div>'+
-    '<div class="card" style="--ac:#E3A857;"><div class="kl">매출 KPI (1~7월)</div><div class="kv" style="color:#E3A857;">'+(kr*10000).toLocaleString()+'</div><div class="ks">연간 '+D.kpi_r.reduce(function(a,b){return a+b;},0)*10000+'</div></div>'+
-    '<div class="card" style="--ac:#4FB88A;"><div class="kl">취급고 달성률 (1~7월)</div><div class="kv" style="color:'+rc(br)+';">'+br+'%</div><div class="ks">'+(ab*10000).toLocaleString()+' / KPI '+(kb*10000).toLocaleString()+'</div></div>'+
-    '<div class="card" style="--ac:'+rc(rr)+';"><div class="kl">매출 달성률 (1~7월)</div><div class="kv" style="color:'+rc(rr)+';">'+rr+'%</div><div class="ks">'+(ar*10000).toLocaleString()+' / KPI '+(kr*10000).toLocaleString()+'</div></div>';
+    '<div class="card" style="--ac:#00BAD1;"><div class="kl">취급고 KPI (1~'+N+'월)</div><div class="kv" style="color:#00BAD1;">'+(kb*10000).toLocaleString()+'</div><div class="ks">연간 '+D.kpi_b.reduce(function(a,b){return a+b;},0)*10000+'</div></div>'+
+    '<div class="card" style="--ac:#FF9F43;"><div class="kl">매출 KPI (1~'+N+'월)</div><div class="kv" style="color:#FF9F43;">'+(kr*10000).toLocaleString()+'</div><div class="ks">연간 '+D.kpi_r.reduce(function(a,b){return a+b;},0)*10000+'</div></div>'+
+    '<div class="card" style="--ac:#28C76F;"><div class="kl">취급고 달성률 (1~'+N+'월)</div><div class="kv" style="color:'+rc(br)+';">'+br+'%</div><div class="ks">'+(ab*10000).toLocaleString()+' / KPI '+(kb*10000).toLocaleString()+'</div></div>'+
+    '<div class="card" style="--ac:'+rc(rr)+';"><div class="kl">매출 달성률 (1~'+N+'월)</div><div class="kv" style="color:'+rc(rr)+';">'+rr+'%</div><div class="ks">'+(ar*10000).toLocaleString()+' / KPI '+(kr*10000).toLocaleString()+'</div></div>';
   // 월별 차트
   switchTeam(tm,'b');
   // 상품별 차트
@@ -536,11 +629,11 @@ function buildTeam(tm){
   var kpb=prds.map(function(p){return D.prods[p].kpi_b.slice(0,N).reduce(function(a,b){return a+b;},0);});
   var acb=prds.map(function(p){return D.prods[p].act_b.slice(0,N).reduce(function(a,b){return a+b;},0);});
   var rtb=kpb.map(function(k,i){return k>0?pct(acb[i],k):null;});
-  mkBL(tm+'-pb',prds,kpb,acb,rtb,'#4FB88A','#E3A857');
+  mkBL(tm+'-pb',prds,kpb,acb,rtb,'#28C76F','#FF9F43');
   var kpr=prds.map(function(p){return D.prods[p].kpi_r.slice(0,N).reduce(function(a,b){return a+b;},0);});
   var acr=prds.map(function(p){return D.prods[p].act_r.slice(0,N).reduce(function(a,b){return a+b;},0);});
   var rtr=kpr.map(function(k,i){return k>0?pct(acr[i],k):null;});
-  mkBL(tm+'-pr',prds,kpr,acr,rtr,'#E3A857','#E2685C');
+  mkBL(tm+'-pr',prds,kpr,acr,rtr,'#FF9F43','#EA5455');
   // 실적 테이블
   document.getElementById(tm+'-tbl').innerHTML=Object.entries(D.prods).map(function(e){
     var p=e[0],pd=e[1];
@@ -559,7 +652,7 @@ function switchTeam(tm,seg){
   var D=tm==='biz'?BIZ:MKT;
   var kpi=seg==='b'?D.kpi_b:D.kpi_r, act=seg==='b'?D.act_b:D.act_r;
   var rates=kpi.map(function(k,i){return k>0?pct(act[i],k):null;});
-  var bc=seg==='b'?'#4FB88A':'#E3A857', lc=seg==='b'?'#E3A857':'#E2685C';
+  var bc=seg==='b'?'#28C76F':'#FF9F43', lc=seg==='b'?'#FF9F43':'#EA5455';
   document.getElementById(tm+'-bb').className='qb'+(seg==='b'?'':' off');
   document.getElementById(tm+'-rb').className='qb'+(seg==='r'?'':' off');
   if(teamCharts[tm]) teamCharts[tm].destroy();
@@ -569,7 +662,7 @@ function switchTeam(tm,seg){
 function selPM(tm,prod){
   var D=tm==='biz'?BIZ:MKT;
   document.getElementById(tm+'-ptabs').innerHTML=Object.keys(D.prods).map(function(p){
-    var c=PC[p]||'#7C8798', on=p===prod;
+    var c=PC[p]||'#808390', on=p===prod;
     return '<button class="pb'+(on?' on':'')+'" data-tm="'+tm+'" data-p="'+p+'" style="'+(on?'background:'+c+'18;color:'+c+';border-color:'+c+'55;':'')+'" onclick="selPM(this.dataset.tm,this.dataset.p)">'+p+'</button>';
   }).join('');
   var pd=D.prods[prod]; if(!pd) return;
@@ -579,14 +672,14 @@ function selPM(tm,prod){
   teamCharts[tm+'-pm']=new Chart(document.getElementById(tm+'-pm'),{
     type:'bar',
     data:{labels:M,datasets:[
-      {type:'bar',label:'취급고KPI',data:pd.kpi_b,backgroundColor:'rgba(37,99,235,.3)',borderWidth:0,order:3},
-      {type:'bar',label:'취급고실적',data:pd.act_b,backgroundColor:'#4FB88A',borderWidth:0,order:2},
-      {type:'bar',label:'매출KPI',data:pd.kpi_r,backgroundColor:'rgba(251,191,36,.35)',borderWidth:0,order:3},
-      {type:'bar',label:'매출실적',data:pd.act_r,backgroundColor:'#E3A857',borderWidth:0,order:2},
-      {type:'line',label:'달성률',data:rates,borderColor:'#E2685C',backgroundColor:'transparent',pointBackgroundColor:'#E2685C',pointRadius:3,borderWidth:2,tension:0.3,yAxisID:'y2',order:0}
+      {type:'bar',label:'취급고KPI',data:pd.kpi_b,backgroundColor:'rgba(115,103,240,.3)',borderWidth:0,order:3},
+      {type:'bar',label:'취급고실적',data:pd.act_b,backgroundColor:'#28C76F',borderWidth:0,order:2},
+      {type:'bar',label:'매출KPI',data:pd.kpi_r,backgroundColor:'rgba(255,159,67,.32)',borderWidth:0,order:3},
+      {type:'bar',label:'매출실적',data:pd.act_r,backgroundColor:'#FF9F43',borderWidth:0,order:2},
+      {type:'line',label:'달성률',data:rates,borderColor:'#EA5455',backgroundColor:'transparent',pointBackgroundColor:'#EA5455',pointRadius:3,borderWidth:2,tension:0.3,yAxisID:'y2',order:0}
     ]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},y:{ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(17,17,26,.055)'}},y2:{position:'right',ticks:{callback:function(v){return v+'%';},font:{size:10},color:'#E2685C'},grid:{display:false},min:0}}
+      scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},y:{ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(47,43,61,.07)'}},y2:{position:'right',ticks:{callback:function(v){return v+'%';},font:{size:10},color:'#EA5455'},grid:{display:false},min:0}}
     }
   });
 }
@@ -595,9 +688,9 @@ function selPM(tm,prod){
 var agCur=null, agMC=null, agTC=null;
 function buildAG(){
   var prds=Object.keys(AG); agCur='전체';
-  var tabs='<button class="pb on" data-p="전체" style="background:#1a214018;color:#1a2140;border-color:#1a214055;" onclick="selAG(this.dataset.p)">전체</button>';
+  var tabs='<button class="pb on" data-p="전체" style="background:#2F2B3D18;color:#2F2B3D;border-color:#2F2B3D55;" onclick="selAG(this.dataset.p)">전체</button>';
   tabs+=prds.map(function(p){
-    var c=AGC[p]||'#7C8798';
+    var c=AGC[p]||'#808390';
     return '<button class="pb" data-p="'+p+'" style="" onclick="selAG(this.dataset.p)">'+p+'</button>';
   }).join('');
   document.getElementById('ag-ptabs').innerHTML=tabs;
@@ -607,7 +700,7 @@ function buildAG(){
 function selAG(p){
   agCur=p;
   document.querySelectorAll('#ag-ptabs .pb').forEach(function(b){
-    var bp=b.dataset.p, c=bp==='전체'?'#1a2140':(AGC[bp]||'#7C8798'), on=bp===p;
+    var bp=b.dataset.p, c=bp==='전체'?'#2F2B3D':(AGC[bp]||'#808390'), on=bp===p;
     b.className='pb'+(on?' on':'');
     b.style=on?'background:'+c+'18;color:'+c+';border-color:'+c+'55;':'';
   });
@@ -615,7 +708,7 @@ function selAG(p){
 }
 
 function renderAG(){
-  var c=AGC[agCur]||'#7C8798';
+  var c=AGC[agCur]||'#808390';
   // 전체 선택 시 모든 상품 대행사 합산
   var data;
   if(agCur==='전체'){
@@ -628,14 +721,14 @@ function renderAG(){
         data[ag].total+=v.total;
       });
     });
-    c='#1a2140';
+    c='#2F2B3D';
   } else {
     data=AG[agCur]||{};
   }
   document.getElementById('ag-title').textContent=(agCur==='전체'?'전체':agCur)+' — 대행사별 월별 순매출 (만원)';
   var agents=Object.entries(data).sort(function(a,b){return b[1].total-a[1].total;});
   document.getElementById('ag-sum').innerHTML=agents.slice(0,8).map(function(e,i){
-    return '<div style="background:var(--sur);border:.5px solid var(--bdr);border-radius:10px;padding:.55rem .75rem;border-top:2px solid '+PAL[i]+';"><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+e[0]+'</div><div style="font-size:13px;font-weight:700;font-family:DM Mono,monospace;color:'+PAL[i]+';">'+e[1].total.toLocaleString()+'만</div></div>';
+    return '<div style="background:var(--sur);border:1px solid var(--bdr);border-radius:10px;padding:.55rem .75rem;border-top:2px solid '+PAL[i]+';"><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+e[0]+'</div><div style="font-size:13px;font-weight:700;font-family:DM Mono,monospace;color:'+PAL[i]+';">'+e[1].total.toLocaleString()+'만</div></div>';
   }).join('');
   document.getElementById('ag-leg').innerHTML=agents.slice(0,8).map(function(e,i){return '<span><span class="lsq" style="background:'+PAL[i]+';"></span>'+e[0]+'</span>';}).join('');
   if(agMC) agMC.destroy();
@@ -644,10 +737,10 @@ function renderAG(){
     type:'bar',
     data:{labels:M,datasets:agents.slice(0,8).map(function(e,i){return {label:e[0],data:e[1].monthly,backgroundColor:PAL[i],borderWidth:0};})},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{font:{size:10}}}},
+      plugins:{legend:{display:false}},
       scales:{
         x:{stacked:true,ticks:{autoSkip:false,maxRotation:0,font:{size:10}},grid:{display:false}},
-        y:{stacked:true,ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(17,17,26,.055)'}}
+        y:{stacked:true,ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(47,43,61,.07)'}}
       }
     }
   });
@@ -655,11 +748,11 @@ function renderAG(){
   var tots=agents.map(function(e){return {l:e[0],v:e[1].total};}).sort(function(a,b){return b.v-a.v;});
   agTC=new Chart(document.getElementById('ag-tc'),{
     type:'bar',
-    data:{labels:tots.map(function(x){return x.l;}),datasets:[{data:tots.map(function(x){return x.v;}),backgroundColor:tots.map(function(_,i){return PAL[i]||'#8891A3';}),borderWidth:0,borderRadius:4}]},
+    data:{labels:tots.map(function(x){return x.l;}),datasets:[{data:tots.map(function(x){return x.v;}),backgroundColor:tots.map(function(_,i){return PAL[i]||'#A5A3AE';}),borderWidth:0,borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.raw.toLocaleString()+'만';}}}},
       scales:{
-        x:{ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(17,17,26,.055)'}},
+        x:{ticks:{callback:fmt,font:{size:10}},grid:{color:'rgba(47,43,61,.07)'}},
         y:{ticks:{font:{size:11}},grid:{display:false}}
       }
     }
@@ -685,7 +778,7 @@ function buildCamp(){
   var pl=campM&&CD[campM]?Object.keys(CD[campM]):[];
   if(!campP||pl.indexOf(campP)<0) campP=pl[0]||null;
   document.getElementById('camp-ptabs').innerHTML=pl.map(function(p){
-    var c=AGC[p]||PC[p]||'#7C8798', on=p===campP;
+    var c=AGC[p]||PC[p]||'#808390', on=p===campP;
     return '<button class="pb'+(on?' on':'')+'" data-p="'+p+'" style="'+(on?'background:'+c+'18;color:'+c+';border-color:'+c+'55;':'')+'" onclick="selCampP(this.dataset.p)">'+p+'</button>';
   }).join('');
   renderCamp();
@@ -719,14 +812,14 @@ function renderCamp(){
     md=CD[campM]; pl=Object.keys(md);
   }
   sr.innerHTML=pl.map(function(p){
-    var c=AGC[p]||PC[p]||'#7C8798';
-    return '<div style="background:var(--sur);border:.5px solid var(--bdr);border-radius:10px;padding:.55rem .75rem;border-top:2px solid '+c+';"><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+p+'</div><div style="font-size:13px;font-weight:700;color:'+c+';">'+md[p].n+'건</div><div style="font-size:10px;color:var(--tm);">'+Math.round(md[p].r/10000).toLocaleString()+'만</div></div>';
+    var c=AGC[p]||PC[p]||'#808390';
+    return '<div style="background:var(--sur);border:1px solid var(--bdr);border-radius:10px;padding:.55rem .75rem;border-top:2px solid '+c+';"><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+p+'</div><div style="font-size:13px;font-weight:700;color:'+c+';">'+md[p].n+'건</div><div style="font-size:10px;color:var(--tm);">'+Math.round(md[p].r/10000).toLocaleString()+'만</div></div>';
   }).join('');
   if(!campP||!md[campP]){el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--tm);">상품을 선택하세요</div>';return;}
-  var pd=md[campP], c=AGC[campP]||PC[campP]||'#7C8798';
+  var pd=md[campP], c=AGC[campP]||PC[campP]||'#808390';
   function fv(v){return Math.round(v/10000).toLocaleString()+'만';}
   el.innerHTML='<div class="cgrid">'+pd.c.map(function(camp,i){
-    return '<div class="ccard"><div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--sur2);font-size:9px;color:var(--tm);display:flex;align-items:center;justify-content:center;">'+(i+1)+'</div><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+(camp.i||'')+'</div><div style="font-size:13px;font-weight:600;margin-bottom:1px;">'+camp.a+'</div><div style="font-size:11px;color:var(--ts);margin-bottom:.5rem;">'+camp.m+'</div><div style="border-top:.5px solid var(--bdr);margin:.4rem 0;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div style="background:var(--sur2);border-radius:4px;padding:3px 5px;"><div style="font-size:9px;color:var(--tm);">예산</div><div style="font-size:10px;font-family:DM Mono,monospace;">'+fv(camp.b)+'</div></div><div style="background:var(--sur2);border-radius:4px;padding:3px 5px;"><div style="font-size:9px;color:var(--tm);">순매출</div><div style="font-size:10px;font-family:DM Mono,monospace;color:'+c+';">'+fv(camp.v)+'</div></div></div></div>';
+    return '<div class="ccard"><div style="position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--sur2);font-size:9px;color:var(--tm);display:flex;align-items:center;justify-content:center;">'+(i+1)+'</div><div style="font-size:10px;color:var(--ts);margin-bottom:2px;">'+(camp.i||'')+'</div><div style="font-size:13px;font-weight:600;margin-bottom:1px;">'+camp.a+'</div><div style="font-size:11px;color:var(--ts);margin-bottom:.5rem;">'+camp.m+'</div><div style="border-top:1px solid var(--bdr);margin:.4rem 0;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div style="background:var(--sur2);border-radius:4px;padding:3px 5px;"><div style="font-size:9px;color:var(--tm);">예산</div><div style="font-size:10px;font-family:DM Mono,monospace;">'+fv(camp.b)+'</div></div><div style="background:var(--sur2);border-radius:4px;padding:3px 5px;"><div style="font-size:9px;color:var(--tm);">순매출</div><div style="font-size:10px;font-family:DM Mono,monospace;color:'+c+';">'+fv(camp.v)+'</div></div></div></div>';
   }).join('')+'</div>';
 }
 
@@ -766,6 +859,56 @@ function computeTeam(products,team){
   });
   return {kpi_b:kb,kpi_r:kr,act_b:ab,act_r:ar,prods:prods};
 }
+
+// ── 주차별 비교 (Phase 4: snapshotHistory 최신 2개에서 자동 계산) ──
+function sumN(arr,n){return arr.slice(0,n).reduce(function(a,b){return a+b;},0);}
+function snapDateLabel(dateStr){
+  var dt=new Date(dateStr+'T00:00:00');
+  return (dt.getMonth()+1)+'/'+dt.getDate();
+}
+function latestTwoSnapshots(snapshotHistory){
+  var hist=(snapshotHistory||[]).slice().sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0);});
+  if(hist.length<2) return null;
+  return {prev:hist[hist.length-2], cur:hist[hist.length-1]};
+}
+function computeWeeklyComparison(snapshotHistory){
+  var pair=latestTwoSnapshots(snapshotHistory);
+  if(!pair) return {prev_label:'-',cur_label:'-',rows:[],note:'비교할 이전 스냅샷이 아직 없습니다. 동기화가 하루 이상 누적되면 표시됩니다.'};
+  var pt=computeTotal(pair.prev.products), ct=computeTotal(pair.cur.products);
+  var pb=sumN(pt.act_b,N), pk=sumN(pt.kpi_b,N), pr=sumN(pt.act_r,N), pkr=sumN(pt.kpi_r,N);
+  var cb=sumN(ct.act_b,N), ck=sumN(ct.kpi_b,N), cr=sumN(ct.act_r,N), ckr=sumN(ct.kpi_r,N);
+  return {
+    prev_label:snapDateLabel(pair.prev.date), cur_label:snapDateLabel(pair.cur.date),
+    rows:[
+      {label:'취급고 달성률', prev:pct(pb,pk), cur:pct(cb,ck), unit:'pct'},
+      {label:'매출 달성률', prev:pct(pr,pkr), cur:pct(cr,ckr), unit:'pct'},
+      {label:'누적 취급고', prev:Math.round(pb*10000), cur:Math.round(cb*10000), unit:'won'},
+      {label:'누적 매출', prev:Math.round(pr*10000), cur:Math.round(cr*10000), unit:'won'}
+    ]
+  };
+}
+function computeWeeklyProductChanges(snapshotHistory){
+  var pair=latestTwoSnapshots(snapshotHistory);
+  if(!pair) return {biz:[],mkt:[]};
+  var monthIdx=Math.max(0,N-1), monthLabel=M[monthIdx];
+  function changesFor(team){
+    var rows=[];
+    Object.keys(pair.cur.products).forEach(function(name){
+      var p=pair.cur.products[name];
+      var teamOf=p.team||(PRODS[name]&&PRODS[name].team);
+      if(teamOf!==team) return;
+      var prevP=pair.prev.products[name];
+      var prevVal=prevP?(prevP.act_b[monthIdx]||0):0;
+      var curVal=p.act_b[monthIdx]||0;
+      if(curVal===prevVal) return;
+      rows.push({name:name,month:monthLabel,kind:'취급고',prev:Math.round(prevVal*10000),cur:Math.round(curVal*10000)});
+    });
+    rows.sort(function(a,b){return Math.abs(b.cur-b.prev)-Math.abs(a.cur-a.prev);});
+    return rows;
+  }
+  return {biz:changesFor('biz'), mkt:changesFor('mkt')};
+}
+
 function initDashboard(){
 // ── 초기화 ──
 window.agDone=false; window.bizDone=false; window.mktDone=false; window.rawDone=false;
@@ -784,12 +927,31 @@ buildCamp();
 
 }
 function renderUpdatedAt(){
-  if(!DATA.updatedAt) return;
+  var el=document.getElementById('hdr-time')||document.getElementById('hdr-sub');
+  if(!el) return;
+  if(!DATA.updatedAt){ el.textContent='마지막 업데이트: -'; return; }
   var d=new Date(DATA.updatedAt);
   var pad=function(n){return String(n).padStart(2,'0');};
   var txt=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
-  var el=document.getElementById('hdr-sub');
-  if(el) el.textContent='구글 시트 2026년_미디어사업실 매출 관리_v2.0 | R6 취급고 KPI · R7 매출 KPI | 마지막 업데이트: '+txt;
+  el.textContent='마지막 업데이트: '+txt;
+}
+// ── 사이드바 토글 (모바일) ──
+function toggleSide(){document.body.classList.toggle('side-open');}
+
+// ── "1~N월" 라벨 자동 갱신 (달력 기준) ──
+function updateMonthRangeLabels(){
+  var map={
+    'biz-sec-b':'상품별 취급고 달성 (1~'+N+'월)',
+    'biz-sec-r':'상품별 매출 달성 (1~'+N+'월)',
+    'biz-sec-tbl':'상품별 실적 상세 (1~'+N+'월)',
+    'mkt-sec-b':'상품별 취급고 달성 (1~'+N+'월)',
+    'mkt-sec-r':'상품별 매출 달성 (1~'+N+'월)',
+    'mkt-sec-tbl':'상품별 실적 상세 (1~'+N+'월)'
+  };
+  Object.keys(map).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.textContent=map[id];
+  });
 }
 function loadDashboard(){
   fetch('data.json').then(function(r){return r.json();}).then(function(d){
@@ -801,13 +963,21 @@ function loadDashboard(){
     TKPIB=TOTAL.kpi_b; TKPIR=TOTAL.kpi_r; TACTB=TOTAL.act_b; TACTR=TOTAL.act_r;
     TQKPI=d.quarterlyOverall.kpiWon; TQACT=d.quarterlyOverall.actWon;
     STELLA=d.stellaH1BillOverride;
-    N=d.monthsElapsed;
+    // 매월 1일이 되면 자동으로 "1~N월" 기준이 다음 달로 넘어가도록 현재 달력
+    // 날짜에서 직접 계산한다(data.json의 monthsElapsed 값에 더 이상 의존하지
+    // 않음 — 수동으로 매달 갱신해줄 필요가 없어짐).
+    N=Math.min(12, new Date().getMonth()+1);
     AG=d.agencyRevenue; CD=d.campaignDetails;
-    WEEKCMP=d.weeklyComparison; WEEKPROD=d.weeklyProductChanges;
+    WEEKCMP=computeWeeklyComparison(d.snapshotHistory);
+    WEEKPROD=computeWeeklyProductChanges(d.snapshotHistory);
     renderUpdatedAt();
+    updateMonthRangeLabels();
     initDashboard();
   }).catch(function(err){
-    document.getElementById('app').innerHTML='<div style="padding:2rem;font-family:sans-serif;color:#E2685C;">데이터를 불러오지 못했습니다 (data.json). '+err+'</div>';
+    var host=document.querySelector('.wrap')||document.getElementById('app');
+    host.innerHTML='<div class="box" style="border-color:rgba(234,84,85,.35);background:rgba(234,84,85,.06);">'+
+      '<div style="font-size:13px;font-weight:700;color:#EA5455;margin-bottom:.35rem;">데이터를 불러오지 못했습니다 (data.json)</div>'+
+      '<div style="font-size:11.5px;color:var(--ts);line-height:1.6;">잠시 후 새로고침하거나 관리자에게 문의해 주세요.<br><span style="font-family:DM Mono,monospace;color:var(--tm);">'+String(err)+'</span></div></div>';
     console.error('data.json load failed', err);
   });
 }
