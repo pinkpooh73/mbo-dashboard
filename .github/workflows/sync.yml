@@ -1,29 +1,29 @@
 name: Sync data.json from Google Sheet
 
 on:
+  schedule:
+    # 매일 4회: 09:00 / 12:00 / 15:00 / 18:00 KST (= 00:00 / 03:00 / 06:00 /
+    # 09:00 UTC — GitHub Actions cron is always UTC). 이전의 시간당(24회/일)
+    # 폴링이 낭비라는 사용자 피드백으로 제거됐었는데, 완전 수동(웹훅+수동
+    # 실행만)으로는 "자동으로 읽어오는" 요구를 충족하지 못해 다시 스케줄을
+    # 두되 훨씬 낮은 빈도로 절충했다. detectChanges.js 덕분에 시트가 그대로면
+    # 커밋/배포 없이 조용히 끝나므로, 실질 비용은 GitHub Actions 실행 시간
+    # 4회/일 정도뿐이다.
+    - cron: '0 0,3,6,9 * * *'
   repository_dispatch:
     types: [sheet-edited]
     # Fired by the Apps Script onEdit trigger bound to the sheet (see
-    # sync/apps-script/onEditTrigger.gs) — this is now the ONLY automatic
-    # path, typically landing within ~30-60s of an edit (the Apps Script side
-    # debounces rapid consecutive edits down to one call).
-    #
-    # The hourly cron fallback that used to sit here was removed deliberately
-    # (not an oversight): it ran unconditionally every hour regardless of
-    # whether the sheet had changed, which the user flagged as wasted CI
-    # minutes/API calls, and — now that detectChanges.js makes a no-op run a
-    # true no-op — its main remaining value was as a safety net for a broken
-    # webhook, not freshness. The user chose to drop that safety net in favor
-    # of manual "Run workflow" (below) as the fallback instead. If the
-    # webhook silently stops firing, the dashboard goes stale with no
-    # automatic recovery until someone runs it by hand — see CLAUDE.md's
-    # Phase 4 section for the full reasoning behind this trade.
+    # sync/apps-script/onEditTrigger.gs) — near-real-time path, typically
+    # landing within ~30-60s of an edit (the Apps Script side debounces
+    # rapid consecutive edits down to one call). Still not attached to the
+    # live sheet as of this writing; the schedule above is what actually
+    # keeps data fresh until that setup is done.
   workflow_dispatch: {}
     # Manual trigger — this is what the dashboard's "데이터 갱신하기" sidebar
     # link points at (index.html links to this workflow's Actions page rather
     # than calling the API directly, so no access token has to be embedded in
     # the public page). Also useful for verifying the sync end to end without
-    # waiting on a sheet edit.
+    # waiting for the next scheduled run.
 
 permissions:
   contents: write
@@ -54,17 +54,10 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          SMTP_FROM: ${{ secrets.SMTP_FROM }}
-          ALERT_EMAIL_TO: ${{ vars.ALERT_EMAIL_TO }}
-          # Phase 5 — every var above is optional per-channel: if a channel's
-          # config is incomplete, that channel is skipped (::warning:: only,
-          # see sync/notify.js) without blocking the sync or the other
-          # channel. ALERT_EMAIL_TO is a plain repo variable, not a secret —
-          # an email address isn't sensitive on its own.
+          # Phase 5 — optional: if unset, detected anomalies still show up as
+          # ::warning:: annotations on the run (see sync/notify.js), just no
+          # Slack message gets sent. (The email channel that used to be here
+          # was removed at the user's request — see business-rules.md §6.)
         run: node sync.js
         # A structural validation failure (SheetStructureError) or a fetch
         # failure exits non-zero here, which fails this step *before* any

@@ -153,17 +153,18 @@ Stellaize처럼 원래부터 항상 취급고=매출인 상품도 있어서**, �
 
 ### 알림 채널
 
-Slack과 이메일 두 채널을 모두 지원하며(`sync/notify.js`가 둘 다 시도),
-각각 독립적으로 설정 여부를 확인합니다 — 한쪽 설정이 없거나 실패해도 다른
-쪽/동기화 자체에는 영향 없습니다.
+**Slack만 지원합니다.** `SLACK_WEBHOOK_URL`(GitHub Actions 시크릿, 인커밍
+웹훅 URL)이 없으면 알림을 안 보낼 뿐 동기화는 정상 진행됩니다
+(`sync/notify.js` → `sync/notifySlack.js`).
 
-- **Slack**: `SLACK_WEBHOOK_URL` (GitHub Actions 시크릿) — 인커밍 웹훅 URL.
-- **이메일**: `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`(시크릿),
-  `SMTP_FROM`(시크릿, 생략 시 `SMTP_USER`로 발신), `ALERT_EMAIL_TO`(repo
-  variable — 이메일 주소 자체는 민감정보가 아니므로 secret이 아닌 variable로
-  관리). `sync/notifyEmail.js`가 nodemailer로 발송합니다.
-- 연동만 따로 확인하고 싶으면 `cd sync && node scripts/testNotify.js` —
-  실제 시트/동기화 없이 두 채널 모두에 테스트 메시지를 보내봅니다.
+이메일(SMTP/nodemailer) 채널이 잠깐 있었지만 사용자 요청으로 제거했습니다
+— `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM` 시크릿과
+`ALERT_EMAIL_TO` repo variable도 GitHub에서 삭제했습니다. 다시 필요해지면
+`sync/notifySlack.js`를 참고해서 같은 패턴(독립적으로 설정 여부 확인,
+실패해도 동기화는 안 막음)으로 새로 만들면 됩니다.
+
+연동만 따로 확인하고 싶으면 `cd sync && node scripts/testNotify.js` —
+실제 시트/동기화 없이 Slack으로 테스트 메시지를 보내봅니다.
 
 ## 7. 동기화 범위 — sync가 갱신하는 필드 / 갱신하지 않는 필드
 

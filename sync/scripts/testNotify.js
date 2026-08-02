@@ -1,8 +1,7 @@
 'use strict';
-// Sends a synthetic test alert through every configured channel (Slack,
-// email), without needing Google Sheets credentials or a real sync. Useful
-// for verifying SLACK_WEBHOOK_URL / SMTP_* / ALERT_EMAIL_TO are wired up
-// correctly before trusting them in the real sync.yml run.
+// Sends a synthetic test alert to Slack, without needing Google Sheets
+// credentials or a real sync. Useful for verifying SLACK_WEBHOOK_URL is
+// wired up correctly before trusting it in the real sync.yml run.
 //
 // Usage: set the relevant env vars, then `node scripts/testNotify.js`.
 const { notifyAnomalies } = require('../notify');
