@@ -32,9 +32,9 @@ It writes **nothing at all** when the sheet produced no material change (see
 something a reader could notice moved, so an unchanged sheet produces no
 commit and no Pages redeploy.
 **The `GOOGLE_SERVICE_ACCOUNT_JSON`/`GOOGLE_SHEET_ID` repo secrets are still
-not set**, so both the cron and the Phase 4 webhook trigger will keep failing
-at the "fetch from Sheets API" step until someone provisions a service
-account, shares the sheet with it, and adds those two secrets in the repo's
+not set**, so the Phase 4 webhook trigger will keep failing at the "fetch
+from Sheets API" step until someone provisions a service account, shares
+the sheet with it, and adds those two secrets in the repo's
 Settings → Secrets. Parsing/validation logic is proven independently of that
 via `sync/test/` (`cd sync && npm test`), which runs against a real captured
 sheet export, not live credentials.
@@ -82,12 +82,20 @@ sheet export, not live credentials.
   (dispatch → workflow run) is verified for real, though — an actual
   `repository_dispatch` fired at the repo landed a new Actions run within ~3
   seconds.
-- `sync.yml` keeps the hourly cron as a fallback alongside the new
-  `repository_dispatch` trigger — deliberately not replaced. Reasoning: if
-  the Apps Script trigger silently stops firing (Google account
-  reauthorization needed, trigger quota, someone deletes the trigger), the
-  dashboard would otherwise go stale with no visible symptom. Worst case with
-  both paths is the old 1h staleness; best case is under a minute.
+- **Update (post-Phase 5): the hourly cron fallback was removed at the
+  user's request** — it ran unconditionally every hour regardless of
+  whether the sheet had changed, which cost real CI minutes/API calls for
+  no benefit once `detectChanges.js` made a no-op run a true no-op. The
+  Apps Script `repository_dispatch` is now the *only* automatic trigger;
+  `workflow_dispatch` (manual "Run workflow") is the fallback instead of a
+  time-based one. This was a deliberate trade the user chose after being
+  shown the alternative (a same-page "sync now" button, which would have
+  required embedding a GitHub Actions token in the public page — rejected
+  as a bad exposure for a low-value convenience). If the webhook silently
+  stops firing, the dashboard now goes stale with **no automatic
+  recovery** until someone notices and runs it by hand via the sidebar's
+  "데이터 갱신하기" link (opens the workflow's Actions page — no token in
+  `index.html`) or `gh workflow run`.
 - `sync/mergeSnapshot.js`: `sync.js` now appends the freshly-synced products
   into `data.json.snapshotHistory` on every successful run, keyed by
   Asia/Seoul calendar date — **at most one entry per day** (same-day resyncs
@@ -168,9 +176,12 @@ codebase.
 ```
 
 - **Sync Job**: reads the Google Sheet ("2026년_미디어사업실 매출 관리_v2.0") via the
-  Sheets API, normalizes rows into JSON. Runs on an hourly cron (fallback) plus
-  a `repository_dispatch` fired by an Apps Script `onEdit` trigger (Phase 4)
-  for near-real-time updates.
+  Sheets API, normalizes rows into JSON. Triggered solely by a
+  `repository_dispatch` fired by an Apps Script `onEdit` trigger (Phase 4)
+  for near-real-time updates, plus manual `workflow_dispatch` (via the
+  dashboard's "데이터 갱신하기" sidebar link or `gh workflow run`) — the
+  hourly cron fallback that used to sit here was removed post-Phase 5 at
+  the user's request (see the Phase 4 section below for why).
 - **Data Store**: normalized current data + accumulated historical snapshots, stored
   as committed JSON (DB migration is a non-goal for now). `snapshotHistory` accumulates
   automatically now (Phase 4) — one entry per calendar date, no manual curation.

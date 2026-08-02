@@ -4,20 +4,26 @@ on:
   repository_dispatch:
     types: [sheet-edited]
     # Fired by the Apps Script onEdit trigger bound to the sheet (see
-    # sync/apps-script/onEditTrigger.gs) — this is the Phase 4 near-real-time
+    # sync/apps-script/onEditTrigger.gs) — this is now the ONLY automatic
     # path, typically landing within ~30-60s of an edit (the Apps Script side
     # debounces rapid consecutive edits down to one call).
-  schedule:
-    # Kept as a fallback safety net, not replaced (Phase 4 decision — see
-    # CLAUDE.md/PRD notes): if the Apps Script trigger silently stops firing
-    # (quota exhaustion, script authorization revoked, trigger deleted...),
-    # the dashboard would otherwise go stale with no visible symptom until
-    # someone happens to notice. Worst case with both paths is 1h staleness,
-    # same as before Phase 4; best case is ~1min.
-    - cron: '0 * * * *'
+    #
+    # The hourly cron fallback that used to sit here was removed deliberately
+    # (not an oversight): it ran unconditionally every hour regardless of
+    # whether the sheet had changed, which the user flagged as wasted CI
+    # minutes/API calls, and — now that detectChanges.js makes a no-op run a
+    # true no-op — its main remaining value was as a safety net for a broken
+    # webhook, not freshness. The user chose to drop that safety net in favor
+    # of manual "Run workflow" (below) as the fallback instead. If the
+    # webhook silently stops firing, the dashboard goes stale with no
+    # automatic recovery until someone runs it by hand — see CLAUDE.md's
+    # Phase 4 section for the full reasoning behind this trade.
   workflow_dispatch: {}
-    # Manual "Run workflow" button in the Actions tab — use this to verify
-    # the sync works end to end without waiting for the next hourly tick.
+    # Manual trigger — this is what the dashboard's "데이터 갱신하기" sidebar
+    # link points at (index.html links to this workflow's Actions page rather
+    # than calling the API directly, so no access token has to be embedded in
+    # the public page). Also useful for verifying the sync end to end without
+    # waiting on a sheet edit.
 
 permissions:
   contents: write
