@@ -98,13 +98,8 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
 
 /* ── 상품 검색 ── */
 #prod-search-wrap{position:relative;max-width:380px;}
-#prod-search{width:100%;padding:.65rem .85rem;font-size:13px;border:1px solid var(--bdr2);border-radius:var(--radius-sm);background:var(--sur);color:var(--ink);font-family:inherit;transition:border-color .15s,box-shadow .15s;}
+#prod-search{width:100%;padding:.65rem 2.1rem .65rem .85rem;font-size:13px;border:1px solid var(--bdr2);border-radius:var(--radius-sm);background:var(--sur) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236F6B7D%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E') no-repeat right .75rem center;background-size:16px;color:var(--ink);font-family:inherit;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
 #prod-search:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(115,103,240,.14);}
-#prod-search-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);max-height:230px;overflow-y:auto;z-index:50;}
-.search-item{padding:.55rem .85rem;font-size:12.5px;cursor:pointer;color:var(--tp);}
-.search-item:hover,.search-item:focus-visible{background:var(--sur2);color:var(--primary);}
-.search-item.empty{color:var(--tm);cursor:default;}
-.search-item.empty:hover{background:transparent;color:var(--tm);}
 #prod-search-empty{display:none;margin-top:.7rem;font-size:11.5px;color:var(--tm);}
 #prod-search-result{display:none;margin-top:1.1rem;}
 
@@ -245,8 +240,9 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
   <div class="sec">상품 검색</div>
   <div class="box">
     <div id="prod-search-wrap">
-      <input type="text" id="prod-search" placeholder="상품명으로 검색 (예: 비즈링, ASUM)" autocomplete="off" aria-label="상품 검색">
-      <div id="prod-search-dropdown" role="listbox"></div>
+      <select id="prod-search" aria-label="상품 검색">
+        <option value="">상품을 선택하세요</option>
+      </select>
     </div>
     <div id="prod-search-empty">일치하는 상품이 없습니다.</div>
     <div id="prod-search-result">
@@ -481,66 +477,46 @@ function buildKPICards(){
 
 // ── 상품 검색 (KPI 달성현황 메인화면) ──
 var searchChart=null, searchInited=false;
-function matchProducts(q){
-  q=q.trim().toLowerCase();
-  if(!q) return [];
-  return Object.keys(PRODS).filter(function(p){return p.toLowerCase().indexOf(q)>=0;});
-}
-function renderSearchDropdown(matches){
-  var dd=document.getElementById('prod-search-dropdown');
-  if(matches.length===0){
-    dd.innerHTML='<div class="search-item empty">일치하는 상품이 없습니다</div>';
-  } else {
-    dd.innerHTML=matches.map(function(p){return '<div class="search-item" data-p="'+p.replace(/"/g,'&quot;')+'" role="option">'+p+'</div>';}).join('');
-  }
-  dd.style.display='block';
-}
 function selectSearchProduct(p){
   var pd=PRODS[p];
-  var dd=document.getElementById('prod-search-dropdown'), empty=document.getElementById('prod-search-empty'), res=document.getElementById('prod-search-result');
-  dd.style.display='none';
+  var empty=document.getElementById('prod-search-empty'), res=document.getElementById('prod-search-result');
   if(!pd){ empty.style.display='block'; res.style.display='none'; return; }
   empty.style.display='none';
   document.getElementById('prod-search').value=p;
-  document.getElementById('prod-search-title').textContent=p+' — '+new Date().getFullYear()+'년 매출추이 (만원)';
+  document.getElementById('prod-search-title').textContent=p+' — '+new Date().getFullYear()+'년 취급고·매출 추이 (만원)';
   if(searchChart) searchChart.destroy();
   searchChart=new Chart(document.getElementById('prod-search-chart'),{
     type:'line',
-    data:{labels:M,datasets:[{label:'매출실적',data:pd.act_r,borderColor:'#FF9F43',backgroundColor:'rgba(255,159,67,.16)',pointBackgroundColor:'#FF9F43',pointRadius:3,borderWidth:2,tension:.3,fill:true}]},
+    data:{labels:M,datasets:[
+      {label:'취급고실적',data:pd.act_b,borderColor:'#00BAD1',backgroundColor:'rgba(0,186,209,.14)',pointBackgroundColor:'#00BAD1',pointRadius:3,borderWidth:2,tension:.3,fill:true},
+      {label:'매출실적',data:pd.act_r,borderColor:'#FF9F43',backgroundColor:'rgba(255,159,67,.14)',pointBackgroundColor:'#FF9F43',pointRadius:3,borderWidth:2,tension:.3,fill:true}
+    ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' 매출: '+(ctx.raw||0).toLocaleString()+'만';}}}},
+      plugins:{legend:{display:true,position:'top',align:'end'},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+(ctx.raw||0).toLocaleString()+'만';}}}},
       scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10},color:'#6F6B7D'},grid:{display:false}},y:{ticks:{callback:fmt,font:{size:10},color:'#6F6B7D'},grid:{color:'rgba(47,43,61,.07)'}}}
     }
   });
-  var total=pd.act_r.reduce(function(a,b){return a+b;},0);
+  var totalB=pd.act_b.reduce(function(a,b){return a+b;},0);
+  var totalR=pd.act_r.reduce(function(a,b){return a+b;},0);
   document.getElementById('prod-search-thead').innerHTML='<th>구분</th>'+M.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>합계</th>';
-  document.getElementById('prod-search-tbl').innerHTML='<tr><td style="font-weight:600;">매출실적(만원)</td>'+pd.act_r.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(total)+'</td></tr>';
+  document.getElementById('prod-search-tbl').innerHTML=
+    '<tr><td style="font-weight:600;">취급고실적(만원)</td>'+pd.act_b.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalB)+'</td></tr>'+
+    '<tr><td style="font-weight:600;">매출실적(만원)</td>'+pd.act_r.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalR)+'</td></tr>';
   res.style.display='block';
 }
 function initProductSearch(){
   if(searchInited) return;
   searchInited=true;
-  var input=document.getElementById('prod-search');
-  var dd=document.getElementById('prod-search-dropdown');
-  input.addEventListener('input',function(){
-    var matches=matchProducts(input.value);
-    if(!input.value.trim()){ dd.style.display='none'; return; }
-    renderSearchDropdown(matches);
+  var sel=document.getElementById('prod-search');
+  Object.keys(PRODS).sort(function(a,b){return a.localeCompare(b,'ko');}).forEach(function(p){
+    var opt=document.createElement('option');
+    opt.value=p; opt.textContent=p;
+    sel.appendChild(opt);
   });
-  input.addEventListener('keydown',function(e){
-    if(e.key==='Enter'){
-      var matches=matchProducts(input.value);
-      if(matches.length>0) selectSearchProduct(matches[0]);
-    } else if(e.key==='Escape'){
-      dd.style.display='none';
-    }
-  });
-  dd.addEventListener('click',function(e){
-    var item=e.target.closest('.search-item[data-p]');
-    if(item) selectSearchProduct(item.dataset.p);
-  });
-  document.addEventListener('click',function(e){
-    if(!e.target.closest('#prod-search-wrap')) dd.style.display='none';
+  sel.addEventListener('change',function(){
+    if(sel.value){ selectSearchProduct(sel.value); return; }
+    document.getElementById('prod-search-empty').style.display='none';
+    document.getElementById('prod-search-result').style.display='none';
   });
 }
 
