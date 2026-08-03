@@ -488,8 +488,8 @@ function selectSearchProduct(p){
   searchChart=new Chart(document.getElementById('prod-search-chart'),{
     type:'line',
     data:{labels:M,datasets:[
-      {label:'취급고실적',data:pd.act_b,borderColor:'#00BAD1',backgroundColor:'rgba(0,186,209,.14)',pointBackgroundColor:'#00BAD1',pointRadius:3,borderWidth:2,tension:.3,fill:true},
-      {label:'매출실적',data:pd.act_r,borderColor:'#FF9F43',backgroundColor:'rgba(255,159,67,.14)',pointBackgroundColor:'#FF9F43',pointRadius:3,borderWidth:2,tension:.3,fill:true}
+      {label:'취급고',data:pd.act_b,borderColor:'#00BAD1',backgroundColor:'rgba(0,186,209,.14)',pointBackgroundColor:'#00BAD1',pointRadius:3,borderWidth:2,tension:.3,fill:true},
+      {label:'매출',data:pd.act_r,borderColor:'#FF9F43',backgroundColor:'rgba(255,159,67,.14)',pointBackgroundColor:'#FF9F43',pointRadius:3,borderWidth:2,tension:.3,fill:true}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:true,position:'top',align:'end'},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+(ctx.raw||0).toLocaleString()+'만';}}}},
@@ -500,8 +500,8 @@ function selectSearchProduct(p){
   var totalR=pd.act_r.reduce(function(a,b){return a+b;},0);
   document.getElementById('prod-search-thead').innerHTML='<th>구분</th>'+M.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>합계</th>';
   document.getElementById('prod-search-tbl').innerHTML=
-    '<tr><td style="font-weight:600;">취급고실적(만원)</td>'+pd.act_b.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalB)+'</td></tr>'+
-    '<tr><td style="font-weight:600;">매출실적(만원)</td>'+pd.act_r.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalR)+'</td></tr>';
+    '<tr><td style="font-weight:600;">취급고(만원)</td>'+pd.act_b.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalB)+'</td></tr>'+
+    '<tr><td style="font-weight:600;">매출(만원)</td>'+pd.act_r.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalR)+'</td></tr>';
   res.style.display='block';
 }
 function initProductSearch(){
