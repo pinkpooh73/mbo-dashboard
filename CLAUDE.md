@@ -82,20 +82,28 @@ sheet export, not live credentials.
   (dispatch → workflow run) is verified for real, though — an actual
   `repository_dispatch` fired at the repo landed a new Actions run within ~3
   seconds.
-- **Update (post-Phase 5): the hourly cron fallback was removed at the
-  user's request** — it ran unconditionally every hour regardless of
-  whether the sheet had changed, which cost real CI minutes/API calls for
-  no benefit once `detectChanges.js` made a no-op run a true no-op. The
-  Apps Script `repository_dispatch` is now the *only* automatic trigger;
-  `workflow_dispatch` (manual "Run workflow") is the fallback instead of a
-  time-based one. This was a deliberate trade the user chose after being
-  shown the alternative (a same-page "sync now" button, which would have
-  required embedding a GitHub Actions token in the public page — rejected
-  as a bad exposure for a low-value convenience). If the webhook silently
-  stops firing, the dashboard now goes stale with **no automatic
-  recovery** until someone notices and runs it by hand via the sidebar's
-  "데이터 갱신하기" link (opens the workflow's Actions page — no token in
-  `index.html`) or `gh workflow run`.
+- **Update (post-Phase 5, current state): scheduled sync runs 4x/day
+  (09:00/12:00/15:00/18:00 KST), skipping weekends and Korean public
+  holidays.** This went through a few iterations, in order: hourly cron
+  (Phase 4) → removed entirely in favor of `repository_dispatch` +
+  manual-only (user flagged hourly as wasted CI/API usage; a same-page
+  "sync now" button was considered and rejected because it would require
+  embedding a GitHub Actions token in the public page) → user decided
+  manual-only wasn't real automation either, so cron came back at a much
+  lower cadence (4x/day instead of 24x/day) → user asked to also skip
+  weekends/holidays, since nobody edits the sheet then. The sidebar's
+  "데이터 갱신하기" manual-trigger link that existed briefly during the
+  manual-only period was removed once the schedule came back — see
+  [sync/isSkipDay.js](sync/isSkipDay.js) (tested,
+  [sync/test/isSkipDay.test.js](sync/test/isSkipDay.test.js)) and
+  [sync/holidays.txt](sync/holidays.txt) (**must be updated every year** —
+  see that file's own header for why guessing lunar-calendar holiday dates
+  is dangerous, and don't skip verifying a fresh source). The skip check
+  only applies to `schedule`-triggered runs — the Apps Script webhook and
+  `gh workflow run` always run regardless of the day. If the webhook
+  silently stops firing, the dashboard now has at most ~6h staleness
+  (4x/day on weekdays) instead of true real-time, with no further manual
+  UI affordance — use `gh workflow run` or the Actions tab.
 - `sync/mergeSnapshot.js`: `sync.js` now appends the freshly-synced products
   into `data.json.snapshotHistory` on every successful run, keyed by
   Asia/Seoul calendar date — **at most one entry per day** (same-day resyncs
@@ -176,12 +184,13 @@ codebase.
 ```
 
 - **Sync Job**: reads the Google Sheet ("2026년_미디어사업실 매출 관리_v2.0") via the
-  Sheets API, normalizes rows into JSON. Triggered solely by a
-  `repository_dispatch` fired by an Apps Script `onEdit` trigger (Phase 4)
-  for near-real-time updates, plus manual `workflow_dispatch` (via the
-  dashboard's "데이터 갱신하기" sidebar link or `gh workflow run`) — the
-  hourly cron fallback that used to sit here was removed post-Phase 5 at
-  the user's request (see the Phase 4 section below for why).
+  Sheets API, normalizes rows into JSON. Triggered by: a scheduled cron
+  (4x/day on weekdays, skipping Korean public holidays — see
+  `sync/isSkipDay.js`), a `repository_dispatch` fired by an Apps Script
+  `onEdit` trigger (Phase 4) for near-real-time updates, and manual
+  `workflow_dispatch` (`gh workflow run` or the Actions tab — no button in
+  the dashboard itself). See the Phase 4 section below for the trigger
+  model's history; it changed shape several times based on user feedback.
 - **Data Store**: normalized current data + accumulated historical snapshots, stored
   as committed JSON (DB migration is a non-goal for now). `snapshotHistory` accumulates
   automatically now (Phase 4) — one entry per calendar date, no manual curation.

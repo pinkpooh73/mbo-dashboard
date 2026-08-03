@@ -9,6 +9,10 @@ on:
     # 두되 훨씬 낮은 빈도로 절충했다. detectChanges.js 덕분에 시트가 그대로면
     # 커밋/배포 없이 조용히 끝나므로, 실질 비용은 GitHub Actions 실행 시간
     # 4회/일 정도뿐이다.
+    #
+    # 요일 필터를 여기(cron 표현식)에 안 두고 주말/공휴일 판단은 전부
+    # sync/isSkipDay.js 한 곳에서 하도록 몰아뒀다 — 로직이 cron 표현식과
+    # 스크립트 두 군데로 쪼개지면 나중에 한쪽만 고치고 잊어버리기 쉽다.
     - cron: '0 0,3,6,9 * * *'
   repository_dispatch:
     types: [sheet-edited]
@@ -17,13 +21,11 @@ on:
     # landing within ~30-60s of an edit (the Apps Script side debounces
     # rapid consecutive edits down to one call). Still not attached to the
     # live sheet as of this writing; the schedule above is what actually
-    # keeps data fresh until that setup is done.
+    # keeps data fresh until that setup is done. Never skipped for
+    # weekends/holidays — an actual sheet edit should always sync.
   workflow_dispatch: {}
-    # Manual trigger — this is what the dashboard's "데이터 갱신하기" sidebar
-    # link points at (index.html links to this workflow's Actions page rather
-    # than calling the API directly, so no access token has to be embedded in
-    # the public page). Also useful for verifying the sync end to end without
-    # waiting for the next scheduled run.
+    # Manual trigger via `gh workflow run` or the Actions tab's "Run
+    # workflow" button. Also never skipped for weekends/holidays.
 
 permissions:
   contents: write
@@ -44,11 +46,27 @@ jobs:
           cache: 'npm'
           cache-dependency-path: sync/package-lock.json
 
+      - name: Skip scheduled runs on weekends/Korean public holidays
+        id: skip_check
+        working-directory: sync
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          RESULT=$(node isSkipDay.js)
+          echo "skip=$RESULT" >> "$GITHUB_OUTPUT"
+        # repository_dispatch(웹훅)나 workflow_dispatch(수동)로 트리거된
+        # 실행은 이 체크를 건너뛰고 항상 진행됨 — 위 on: 블록 주석 참고.
+        # sync/isSkipDay.js와 sync/holidays.txt 참고(테스트: sync/test/isSkipDay.test.js).
+
       - name: Install sync dependencies
+        if: steps.skip_check.outputs.skip != 'true'
         working-directory: sync
         run: npm ci
 
       - name: Run sync
+        if: steps.skip_check.outputs.skip != 'true'
         working-directory: sync
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
@@ -66,6 +84,7 @@ jobs:
         # whoever watches this repo's Actions.
 
       - name: Commit data.json / raw-table.html if changed
+        if: steps.skip_check.outputs.skip != 'true'
         run: |
           # sync.js leaves both files completely untouched when nothing
           # material changed (no updatedAt churn — see sync/detectChanges.js),
