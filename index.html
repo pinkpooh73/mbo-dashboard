@@ -96,6 +96,18 @@ tbody tr:hover{background:var(--sur2);}
 td{padding:.6rem .95rem;font-size:12px;}
 td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:11.5px;}
 
+/* ── 상품 검색 ── */
+#prod-search-wrap{position:relative;max-width:380px;}
+#prod-search{width:100%;padding:.65rem .85rem;font-size:13px;border:1px solid var(--bdr2);border-radius:var(--radius-sm);background:var(--sur);color:var(--ink);font-family:inherit;transition:border-color .15s,box-shadow .15s;}
+#prod-search:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(115,103,240,.14);}
+#prod-search-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);max-height:230px;overflow-y:auto;z-index:50;}
+.search-item{padding:.55rem .85rem;font-size:12.5px;cursor:pointer;color:var(--tp);}
+.search-item:hover,.search-item:focus-visible{background:var(--sur2);color:var(--primary);}
+.search-item.empty{color:var(--tm);cursor:default;}
+.search-item.empty:hover{background:transparent;color:var(--tm);}
+#prod-search-empty{display:none;margin-top:.7rem;font-size:11.5px;color:var(--tm);}
+#prod-search-result{display:none;margin-top:1.1rem;}
+
 .leg{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:.7rem;font-size:10.5px;color:var(--ts);font-weight:600;}
 .lsq{width:8px;height:8px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:middle;}
 .lln{width:14px;height:2px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:4px;}
@@ -228,6 +240,19 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
 
 <!-- KPI 달성현황 -->
 <div id="pg-kpi" class="page active">
+  <div class="sec">상품 검색</div>
+  <div class="box">
+    <div id="prod-search-wrap">
+      <input type="text" id="prod-search" placeholder="상품명으로 검색 (예: 비즈링, ASUM)" autocomplete="off" aria-label="상품 검색">
+      <div id="prod-search-dropdown" role="listbox"></div>
+    </div>
+    <div id="prod-search-empty">일치하는 상품이 없습니다.</div>
+    <div id="prod-search-result">
+      <p id="prod-search-title" style="font-size:12px;color:var(--ts);margin-bottom:.4rem;font-weight:500;"></p>
+      <div style="position:relative;height:220px;"><canvas id="prod-search-chart"></canvas></div>
+      <div class="tbl" style="overflow-x:auto;margin-top:.9rem;margin-bottom:0;"><table><thead><tr id="prod-search-thead"></tr></thead><tbody id="prod-search-tbl"></tbody></table></div>
+    </div>
+  </div>
   <div class="g4" id="kpi-cards"></div>
   <div class="g4" id="kpi-qbox"></div>
   <div class="sec">주차별 핵심 지표 비교</div>
@@ -452,6 +477,71 @@ function buildKPICards(){
     '<div class="card" style="--ac:#FF9F43;"><div class="kl">연간 매출 KPI</div><div class="kv" style="color:#FF9F43;">'+(t.kpi_r_ann*10000).toLocaleString()+'</div><div class="ks">상반기 '+(t.kpi_r_h1*10000).toLocaleString()+' / 하반기 '+(t.kpi_r_h2*10000).toLocaleString()+'</div></div>'+
     '<div class="card" style="--ac:#28C76F;"><div class="kl">1~'+N+'월 취급고 달성률</div><div class="kv" style="color:'+rc(brt)+';">'+brt+'%</div><div class="ks">'+(ab7*10000).toLocaleString()+' / KPI '+(kb7*10000).toLocaleString()+'</div></div>'+
     '<div class="card" style="--ac:'+rc(rrt)+';"><div class="kl">1~'+N+'월 매출 달성률</div><div class="kv" style="color:'+rc(rrt)+';">'+rrt+'%</div><div class="ks">'+(ar7*10000).toLocaleString()+' / KPI '+(kr7*10000).toLocaleString()+'</div></div>';
+}
+
+// ── 상품 검색 (KPI 달성현황 메인화면) ──
+var searchChart=null, searchInited=false;
+function matchProducts(q){
+  q=q.trim().toLowerCase();
+  if(!q) return [];
+  return Object.keys(PRODS).filter(function(p){return p.toLowerCase().indexOf(q)>=0;});
+}
+function renderSearchDropdown(matches){
+  var dd=document.getElementById('prod-search-dropdown');
+  if(matches.length===0){
+    dd.innerHTML='<div class="search-item empty">일치하는 상품이 없습니다</div>';
+  } else {
+    dd.innerHTML=matches.map(function(p){return '<div class="search-item" data-p="'+p.replace(/"/g,'&quot;')+'" role="option">'+p+'</div>';}).join('');
+  }
+  dd.style.display='block';
+}
+function selectSearchProduct(p){
+  var pd=PRODS[p];
+  var dd=document.getElementById('prod-search-dropdown'), empty=document.getElementById('prod-search-empty'), res=document.getElementById('prod-search-result');
+  dd.style.display='none';
+  if(!pd){ empty.style.display='block'; res.style.display='none'; return; }
+  empty.style.display='none';
+  document.getElementById('prod-search').value=p;
+  document.getElementById('prod-search-title').textContent=p+' — '+new Date().getFullYear()+'년 매출추이 (만원)';
+  if(searchChart) searchChart.destroy();
+  searchChart=new Chart(document.getElementById('prod-search-chart'),{
+    type:'line',
+    data:{labels:M,datasets:[{label:'매출실적',data:pd.act_r,borderColor:'#FF9F43',backgroundColor:'rgba(255,159,67,.16)',pointBackgroundColor:'#FF9F43',pointRadius:3,borderWidth:2,tension:.3,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' 매출: '+(ctx.raw||0).toLocaleString()+'만';}}}},
+      scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:10},color:'#6F6B7D'},grid:{display:false}},y:{ticks:{callback:fmt,font:{size:10},color:'#6F6B7D'},grid:{color:'rgba(47,43,61,.07)'}}}
+    }
+  });
+  var total=pd.act_r.reduce(function(a,b){return a+b;},0);
+  document.getElementById('prod-search-thead').innerHTML='<th>구분</th>'+M.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>합계</th>';
+  document.getElementById('prod-search-tbl').innerHTML='<tr><td style="font-weight:600;">매출실적(만원)</td>'+pd.act_r.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(total)+'</td></tr>';
+  res.style.display='block';
+}
+function initProductSearch(){
+  if(searchInited) return;
+  searchInited=true;
+  var input=document.getElementById('prod-search');
+  var dd=document.getElementById('prod-search-dropdown');
+  input.addEventListener('input',function(){
+    var matches=matchProducts(input.value);
+    if(!input.value.trim()){ dd.style.display='none'; return; }
+    renderSearchDropdown(matches);
+  });
+  input.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){
+      var matches=matchProducts(input.value);
+      if(matches.length>0) selectSearchProduct(matches[0]);
+    } else if(e.key==='Escape'){
+      dd.style.display='none';
+    }
+  });
+  dd.addEventListener('click',function(e){
+    var item=e.target.closest('.search-item[data-p]');
+    if(item) selectSearchProduct(item.dataset.p);
+  });
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('#prod-search-wrap')) dd.style.display='none';
+  });
 }
 
 function buildQBox(){
@@ -888,6 +978,7 @@ function initDashboard(){
 applyChartDefaults();
 window.agDone=false; window.bizDone=false; window.mktDone=false; window.rawDone=false;
 renderDataQuality();
+initProductSearch();
 buildKPICards();
 buildQBox();
 buildWeekMetrics();
