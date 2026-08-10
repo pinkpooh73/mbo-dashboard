@@ -100,7 +100,27 @@ async function fetchSheetRows() {
   if (rows.length === 0) {
     throw new Error('시트에서 값을 하나도 읽지 못했습니다 (시트 이름/범위/공유 설정을 확인하세요).');
   }
-  return rows;
+  return realignRows(rows);
+}
+
+// The Sheets API (and the sheet's public CSV export, checked independently)
+// both trim a fully-empty leading column A from the response — this sheet's
+// column A held a row-number helper as of 2026-07-31 (see
+// test/fixtures/sheet_20260731.json) but sits empty as of 2026-08-10, which
+// shifts every row one column left of what parseSheet.js's fixed COL
+// constants expect (confirmed live: a 2026-08-10 sync run failed to find the
+// "KPI/Total" header because of exactly this). Detect which shape came back
+// by checking where that anchor actually lands, rather than assuming either
+// shape permanently — self-heals if column A ever gets repopulated again.
+function realignRows(rows) {
+  const scanLimit = Math.min(rows.length, 20);
+  for (let i = 0; i < scanLimit; i++) {
+    const row = rows[i] || [];
+    const at = (idx) => (row[idx] || '').toString().trim();
+    if (at(2) === 'KPI' && at(3) === 'Total') return rows;
+    if (at(1) === 'KPI' && at(2) === 'Total') return rows.map((r) => [''].concat(r));
+  }
+  return rows; // neither anchor found — let parseSheet's own error surface
 }
 
 async function main() {
@@ -197,7 +217,11 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  ghError('예상치 못한 오류로 중단되었습니다: ' + ((e && e.stack) || e));
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((e) => {
+    ghError('예상치 못한 오류로 중단되었습니다: ' + ((e && e.stack) || e));
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { realignRows };
