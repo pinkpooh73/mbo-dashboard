@@ -31,11 +31,23 @@ It writes **nothing at all** when the sheet produced no material change (see
 [sync/detectChanges.js](sync/detectChanges.js)) — `updatedAt` only moves when
 something a reader could notice moved, so an unchanged sheet produces no
 commit and no Pages redeploy.
-**The `GOOGLE_SERVICE_ACCOUNT_JSON`/`GOOGLE_SHEET_ID` repo secrets are still
-not set**, so the Phase 4 webhook trigger will keep failing at the "fetch
-from Sheets API" step until someone provisions a service account, shares
-the sheet with it, and adds those two secrets in the repo's
-Settings → Secrets. Parsing/validation logic is proven independently of that
+**Auth history**: originally designed for a service-account JSON key
+(`GOOGLE_SERVICE_ACCOUNT_JSON`), but this org's Cloud org policy
+(`iam.disableServiceAccountKeyCreation`) blocks service-account key creation
+outright — confirmed hitting that wall live in-console on 2026-08-07, not a
+hypothetical. `sync/sync.js`'s `fetchSheetRows()` now supports a plain Sheets
+API key (`GOOGLE_API_KEY`) as the primary path instead, which works *only*
+because the target sheet is shared "anyone with the link can view" — an API
+key carries no identity, it just meters calls against already-public data.
+The service-account path is kept as a fallback (used automatically if
+`GOOGLE_API_KEY` is unset but `GOOGLE_SERVICE_ACCOUNT_JSON` is) in case that
+org policy is ever lifted or the project migrates to Workload Identity
+Federation instead — see business-rules.md §7. **`GOOGLE_API_KEY`/
+`GOOGLE_SHEET_ID` repo secrets are still not set**, so the Phase 4 webhook
+trigger will keep failing at the "fetch from Sheets API" step until someone
+creates a Sheets-API-restricted API key in the `mbo-dashboard-sync` GCP
+project and adds those two secrets in the repo's Settings → Secrets.
+Parsing/validation logic is proven independently of that
 via `sync/test/` (`cd sync && npm test`), which runs against a real captured
 sheet export, not live credentials.
 
@@ -166,7 +178,7 @@ work; it is not a replacement for the PRD.
 - Run the sync job's test suite (no credentials/network needed): `cd sync && npm test`.
 - Run a single sync test file: `cd sync && node --test test/parseSheet.test.js`.
 - Offline dry-run of the full parse+merge pipeline against a real captured sheet export (writes to `sync/scripts/dryRun.out.json`, never touches the real `data.json`): `cd sync && node scripts/dryRun.js`.
-- Actually run the sync job against the live sheet (requires `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_SHEET_ID` env vars — see the Sync Job section below): `cd sync && npm ci && node sync.js`.
+- Actually run the sync job against the live sheet (requires `GOOGLE_SHEET_ID` plus either `GOOGLE_API_KEY` (preferred) or `GOOGLE_SERVICE_ACCOUNT_JSON` as env vars — see the Sync Job section below): `cd sync && npm ci && node sync.js`.
 
 ## What this project is
 

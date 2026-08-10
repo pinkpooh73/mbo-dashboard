@@ -1,11 +1,18 @@
 'use strict';
 // Phase 2 sync job: Google Sheet -> data.json.
 //
-// Auth: a service-account JSON key, never committed — see README notes below
-// and the report given to the user. Expected env vars:
-//   GOOGLE_SERVICE_ACCOUNT_JSON  - the full service-account key JSON (string)
-//   GOOGLE_SHEET_ID              - the target spreadsheet's ID
-// Both come from GitHub Actions secrets in CI (see ../.github/workflows/sync.yml)
+// Auth: this org's Cloud org policy (iam.disableServiceAccountKeyCreation)
+// blocks service-account JSON key creation outright, so the primary path is
+// a plain Sheets API key (GOOGLE_API_KEY) — which only works because the
+// sheet itself is shared "anyone with the link can view"; an API key carries
+// no identity, it just unlocks already-public data. The service-account path
+// is kept as a fallback in case that org policy is ever lifted (e.g. via an
+// exception or a Workload Identity Federation migration) — see
+// business-rules.md §7. Expected env vars (at least one auth var required):
+//   GOOGLE_API_KEY               - Sheets-API-restricted API key (preferred)
+//   GOOGLE_SERVICE_ACCOUNT_JSON  - the full service-account key JSON (string), fallback
+//   GOOGLE_SHEET_ID              - the target spreadsheet's ID (always required)
+// All come from GitHub Actions secrets in CI (see ../.github/workflows/sync.yml)
 // and from a local .env-style export when run by hand; never hardcode them.
 //
 // Safety property this script guarantees: data.json is only written after
@@ -50,29 +57,40 @@ function ghError(msg) {
 }
 
 async function fetchSheetRows() {
+  const apiKey = process.env.GOOGLE_API_KEY;
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   const sheetId = process.env.GOOGLE_SHEET_ID;
-  if (!keyJson) throw new Error('환경변수 GOOGLE_SERVICE_ACCOUNT_JSON이 설정되지 않았습니다.');
   if (!sheetId) throw new Error('환경변수 GOOGLE_SHEET_ID가 설정되지 않았습니다.');
-
-  let credentials;
-  try {
-    credentials = JSON.parse(keyJson);
-  } catch (e) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON을 JSON으로 파싱하지 못했습니다: ' + e.message);
+  if (!apiKey && !keyJson) {
+    throw new Error('환경변수 GOOGLE_API_KEY 또는 GOOGLE_SERVICE_ACCOUNT_JSON 중 하나가 설정되어야 합니다.');
   }
 
-  const auth = new GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-  });
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-
-  const url =
+  const baseUrl =
     `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}` +
     `/values/${encodeURIComponent(RANGE)}?valueRenderOption=FORMATTED_VALUE`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken.token}` } });
+
+  let res;
+  if (apiKey) {
+    // API 키 경로: 시트가 "링크 있는 모든 사용자에게 공개"로 공유되어 있어야
+    // 동작한다 — 키 자체는 신원을 증명하지 않고 이미 공개된 데이터를 읽는
+    // 호출량만 프로젝트 단위로 계량한다.
+    res = await fetch(`${baseUrl}&key=${encodeURIComponent(apiKey)}`);
+  } else {
+    let credentials;
+    try {
+      credentials = JSON.parse(keyJson);
+    } catch (e) {
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON을 JSON으로 파싱하지 못했습니다: ' + e.message);
+    }
+    const auth = new GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    });
+    const client = await auth.getClient();
+    const accessToken = await client.getAccessToken();
+    res = await fetch(baseUrl, { headers: { Authorization: `Bearer ${accessToken.token}` } });
+  }
+
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`Google Sheets API 호출 실패 (HTTP ${res.status}): ${body.slice(0, 500)}`);
@@ -80,7 +98,7 @@ async function fetchSheetRows() {
   const json = await res.json();
   const rows = json.values || [];
   if (rows.length === 0) {
-    throw new Error('시트에서 값을 하나도 읽지 못했습니다 (시트 이름/범위/서비스 계정 공유 권한을 확인하세요).');
+    throw new Error('시트에서 값을 하나도 읽지 못했습니다 (시트 이름/범위/공유 설정을 확인하세요).');
   }
   return rows;
 }
