@@ -47,13 +47,20 @@ function renderRawTable(rows) {
     const rownum = (row[COL.ROWNUM] || '').trim();
     const c = (row[COL.C] || '').trim();
     const d = (row[COL.D] || '').trim();
-    if (rownum === '' && c === '' && d === '') continue; // fully blank spacer row
-    if (!/^\d+$/.test(rownum)) continue; // not a real sheet data row (e.g. a header row)
+    if (c === '' && d === '') continue; // fully blank spacer row
+    // The sheet's own column-reference row ("행"/"A"/"C"/"1월".."12월" as
+    // literal text, not data) used to be excludable by checking rownum was
+    // non-numeric — but rownum went from a real row-number helper (as of the
+    // 2026-07-31 fixture) to genuinely empty in the live sheet, which made
+    // *every* row fail that check and left the whole table empty (caught
+    // 2026-08-10). "1월" as literal text in the Jan column is unique to this
+    // one header row; no real data row ever puts text there instead of a number.
+    if ((row[COL.JAN] || '').trim() === '1월') continue;
     const isRateRow = d.replace(/\s+/g, '') === 'KPI달성률(%)';
     const cells = [];
     for (let i = COL.JAN; i <= COL.ANN; i++) cells.push(fmtCell(row[i], isRateRow));
     html += '<tr>' +
-      `<td style="color:var(--tm);font-family:'DM Mono',monospace;">${esc(rownum)}</td>` +
+      `<td style="color:var(--tm);font-family:'DM Mono',monospace;">${esc(rownum || '-')}</td>` +
       `<td style="font-weight:600;">${esc(c)}</td>` +
       `<td style="color:var(--ts);">${esc(d)}</td>` +
       cells.map((v) => `<td>${v}</td>`).join('') +
