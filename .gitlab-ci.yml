@@ -36,9 +36,6 @@ sync:
           exit 0
         fi
       fi
-    # 임시 진단: 실제 값은 노출하지 않고 길이/앞 6자만 확인 (문제 해결되면 삭제).
-    - echo "GOOGLE_API_KEY length=${#GOOGLE_API_KEY} prefix=${GOOGLE_API_KEY:0:6}"
-    - echo "GOOGLE_SHEET_ID length=${#GOOGLE_SHEET_ID} value=${GOOGLE_SHEET_ID}"
     - node sync.js
     # SheetStructureError나 fetch 실패면 여기서 non-zero로 끝나고, 아래 커밋
     # 단계는 실행되지 않는다 — data.json은 그대로 남는다 (sync.js와 동일 보장).
@@ -52,7 +49,11 @@ sync:
       git config user.email "gitlab-ci@ax-gitlab.incross.com"
       git add data.json raw-table.html
       git commit -m "chore: sync data.json from Google Sheet [skip ci]"
-      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "HEAD:${CI_COMMIT_REF_NAME}"
+      # CI_JOB_TOKEN으로는 이 프로젝트(main이 protected)에 push 권한이 없어서
+      # (2026-08-13 확인: "You are not allowed to push code to this project")
+      # 프로젝트 Access Token(GITLAB_PUSH_TOKEN, write_repository, Maintainer)을
+      # 대신 쓴다 — Settings > CI/CD > Variables에 등록해야 한다.
+      git push "https://oauth2:${GITLAB_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "HEAD:${CI_COMMIT_REF_NAME}"
   # GOOGLE_API_KEY/GOOGLE_SHEET_ID/SLACK_WEBHOOK_URL은 Settings > CI/CD >
   # Variables에 등록해두면 모든 job에 환경변수로 자동 주입되므로 여기서
   # 다시 선언할 필요가 없다 (전에 `variables: GOOGLE_API_KEY: $GOOGLE_API_KEY`
