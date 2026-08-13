@@ -1,0 +1,71 @@
+# GitLab CI 이전본 — .github/workflows/{sync,pages-deploy}.yml을 그대로 옮긴 것.
+# 배포 대상(사내 인프라)이 아직 확정되지 않아 deploy 스테이지는 스텁 상태다 —
+# 확정되면 채운다. sync 스테이지는 배포 대상과 무관하게 지금 바로 동작한다.
+
+stages:
+  - sync
+  - deploy
+
+variables:
+  GIT_DEPTH: 1
+
+sync:
+  stage: sync
+  image: node:20
+  rules:
+    # 스케줄(Settings > CI/CD > Schedules에서 등록, cron은 GitHub Actions와 동일하게
+    # '0 0,3,6,9 * * *' UTC로 설정) / Apps Script 웹훅(trigger token 호출) /
+    # GitLab UI에서 수동 실행(Run pipeline) 전부 허용.
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  before_script:
+    - cd sync
+    - npm ci
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = "schedule" ]; then
+        node isSkipDay.js > /tmp/skip.txt
+        if [ "$(cat /tmp/skip.txt)" = "true" ]; then
+          echo "주말/공휴일 — 스킵"
+          exit 0
+        fi
+      fi
+    - node sync.js
+    # SheetStructureError나 fetch 실패면 여기서 non-zero로 끝나고, 아래 커밋
+    # 단계는 실행되지 않는다 — data.json은 그대로 남는다 (sync.js와 동일 보장).
+    - |
+      cd ..
+      if git diff --quiet -- data.json raw-table.html; then
+        echo "No changes to data.json / raw-table.html."
+        exit 0
+      fi
+      git config user.name "gitlab-ci"
+      git config user.email "gitlab-ci@ax-gitlab.incross.com"
+      git add data.json raw-table.html
+      git commit -m "chore: sync data.json from Google Sheet [skip ci]"
+      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "HEAD:${CI_COMMIT_REF_NAME}"
+  variables:
+    GOOGLE_API_KEY: $GOOGLE_API_KEY
+    GOOGLE_SHEET_ID: $GOOGLE_SHEET_ID
+    SLACK_WEBHOOK_URL: $SLACK_WEBHOOK_URL
+    # 위 세 값은 CI/CD 변수(Settings > CI/CD > Variables)로 등록해야 한다 —
+    # Masked 체크, Protected는 main만 protected면 그대로 켜도 된다.
+
+# ── 배포: 대상 인프라 확정 후 채울 것 ──
+# 후보 A) 내부 웹서버(SSH): scp/rsync로 index.html/compute.js/data.json/
+#         raw-table.html/assets를 목적지에 복사.
+# 후보 B) 내부 S3 호환 스토리지: 업로드 CLI로 동일 파일들을 버킷에 sync.
+# 어느 쪽이든 게시할 파일 목록은 .github/workflows/pages-deploy.yml의
+# "Assemble published site" 스텝과 동일해야 한다 (index.html, compute.js,
+# data.json, raw-table.html, assets/ — sync/나 PRD 문서는 게시하지 않음).
+#
+# deploy:
+#   stage: deploy
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "main"'
+#   script:
+#     - mkdir -p public
+#     - cp index.html compute.js data.json raw-table.html public/
+#     - cp -r assets public/
+#     - echo "TODO: 여기서 public/을 내부 서버로 전송"
