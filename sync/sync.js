@@ -57,9 +57,14 @@ function ghError(msg) {
 }
 
 async function fetchSheetRows() {
-  const apiKey = process.env.GOOGLE_API_KEY;
+  // CI/CD variable UIs (GitLab's Value textarea in particular) can smuggle in
+  // a trailing newline/space on copy-paste, which Google's API rejects as
+  // "API key not valid" even though the visible value looks identical —
+  // confirmed live on GitLab 2026-08-13. trim() defensively so the same key
+  // that works via GitHub Actions secrets works here too.
+  const apiKey = (process.env.GOOGLE_API_KEY || '').trim() || undefined;
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  const sheetId = process.env.GOOGLE_SHEET_ID;
+  const sheetId = (process.env.GOOGLE_SHEET_ID || '').trim();
   if (!sheetId) throw new Error('환경변수 GOOGLE_SHEET_ID가 설정되지 않았습니다.');
   if (!apiKey && !keyJson) {
     throw new Error('환경변수 GOOGLE_API_KEY 또는 GOOGLE_SERVICE_ACCOUNT_JSON 중 하나가 설정되어야 합니다.');
