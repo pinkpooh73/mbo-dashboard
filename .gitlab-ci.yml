@@ -12,6 +12,11 @@ variables:
 sync:
   stage: sync
   image: node:20
+  # 이 인스턴스의 공유 러너(#1 PwASISML)가 "shared-docker" 태그가 붙은 job만
+  # 실행하도록 설정돼 있다 — 태그 없이 두면 파이프라인이 무한 Pending("stuck")
+  # 상태로 멈춘다 (2026-08-13 직접 겪은 문제).
+  tags:
+    - shared-docker
   rules:
     # 스케줄(Settings > CI/CD > Schedules에서 등록, cron은 GitHub Actions와 동일하게
     # '0 0,3,6,9 * * *' UTC로 설정) / Apps Script 웹훅(trigger token 호출) /
