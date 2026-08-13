@@ -36,6 +36,9 @@ sync:
           exit 0
         fi
       fi
+    # 임시 진단: 실제 값은 노출하지 않고 길이/앞 6자만 확인 (문제 해결되면 삭제).
+    - echo "GOOGLE_API_KEY length=${#GOOGLE_API_KEY} prefix=${GOOGLE_API_KEY:0:6}"
+    - echo "GOOGLE_SHEET_ID length=${#GOOGLE_SHEET_ID} value=${GOOGLE_SHEET_ID}"
     - node sync.js
     # SheetStructureError나 fetch 실패면 여기서 non-zero로 끝나고, 아래 커밋
     # 단계는 실행되지 않는다 — data.json은 그대로 남는다 (sync.js와 동일 보장).
@@ -50,12 +53,10 @@ sync:
       git add data.json raw-table.html
       git commit -m "chore: sync data.json from Google Sheet [skip ci]"
       git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "HEAD:${CI_COMMIT_REF_NAME}"
-  variables:
-    GOOGLE_API_KEY: $GOOGLE_API_KEY
-    GOOGLE_SHEET_ID: $GOOGLE_SHEET_ID
-    SLACK_WEBHOOK_URL: $SLACK_WEBHOOK_URL
-    # 위 세 값은 CI/CD 변수(Settings > CI/CD > Variables)로 등록해야 한다 —
-    # Masked 체크, Protected는 main만 protected면 그대로 켜도 된다.
+  # GOOGLE_API_KEY/GOOGLE_SHEET_ID/SLACK_WEBHOOK_URL은 Settings > CI/CD >
+  # Variables에 등록해두면 모든 job에 환경변수로 자동 주입되므로 여기서
+  # 다시 선언할 필요가 없다 (전에 `variables: GOOGLE_API_KEY: $GOOGLE_API_KEY`
+  # 식으로 재선언했었는데, 자기참조 확장이 의도대로 안 될 수 있어 제거함).
 
 # ── 배포: 대상 인프라 확정 후 채울 것 ──
 # 후보 A) 내부 웹서버(SSH): scp/rsync로 index.html/compute.js/data.json/
