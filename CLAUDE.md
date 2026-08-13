@@ -295,11 +295,17 @@ sync fills in the next date on its own now.
 
 "주차별 핵심 지표 비교" / "상품별 주요 변동" (`WEEKCMP`/`WEEKPROD` in
 `index.html`) are computed client-side by `computeWeeklyComparison()`/
-`computeWeeklyProductChanges()` from the two most recent `snapshotHistory`
-entries — see the Phase 4 section above for the selection rule (every
+`computeWeeklyProductChanges()` in [compute.js](compute.js) — every
 product with a nonzero current-month delta, sorted by |delta|, not a fixed
-top-N — verified against the real hand-curated 7/24→7/31 data before the
-manual version was removed).
+top-N (verified against the real hand-curated 7/24→7/31 data before the
+manual version was removed). **Not simply the two most recent
+`snapshotHistory` entries** — once the scheduled sync started running daily
+(2026-08), that picked up day-to-day noise (e.g. Tue vs Wed) instead of a
+real weekly comparison. `latestTwoFridaySnapshots()` in compute.js now
+anchors this specifically to last-Friday-vs-this-Friday (falling back to the
+nearest earlier snapshot if a given Friday was a holiday with no sync), so
+this pair holds steady across the in-between weekday syncs while the rest of
+the dashboard (cards, tables) keeps updating on every sync as normal.
 
 ## Roadmap phases (PRD §7)
 

@@ -2,10 +2,15 @@
 // Appends a snapshot of the freshly-synced products into snapshotHistory.
 //
 // Phase 4: snapshotHistory is now the single source of truth for "주차별
-// 비교" — the frontend derives WEEKCMP/WEEKPROD from its two most recent
-// entries at render time (see computeWeeklyComparison/computeWeeklyProductChanges
-// in index.html), so this is the only place that needs to append new data
-// points. Nothing else needs to hand-curate a weekly comparison anymore.
+// 비교" — the frontend derives WEEKCMP/WEEKPROD from it at render time (see
+// computeWeeklyComparison/computeWeeklyProductChanges in compute.js), so this
+// is the only place that needs to append new data points. Nothing else needs
+// to hand-curate a weekly comparison anymore. As of the scheduled-sync-driven
+// daily accumulation, the frontend picks the two most recent *Friday*
+// entries specifically (latestTwoFridaySnapshots() in compute.js) rather
+// than simply the two most recent entries — otherwise a "주차별" comparison
+// would reshuffle on every weekday sync instead of holding steady week to
+// week.
 //
 // At most one entry per calendar date (Asia/Seoul) is kept. Phase 4 moves
 // sync from hourly to near-real-time (Apps Script webhook), and appending a
@@ -17,9 +22,10 @@
 
 // Retention: one entry/day is bounded per-day but unbounded over time (~3.5KB
 // a day => ~1.2MB a year in a file every dashboard visitor downloads). The
-// frontend only ever reads the two most recent entries
-// (latestTwoSnapshots()), so anything older is kept purely for future
-// trend/history work — 90 days (약 3개월, 분기 단위 회고에 충분) is the cap.
+// frontend only ever reads two Friday entries out of this history
+// (latestTwoFridaySnapshots()), so anything older is kept purely for future
+// trend/history work — 90 days (약 3개월, 분기 단위 회고에 충분, and comfortably
+// more than the ~2 weeks the Friday comparison actually needs) is the cap.
 const RETENTION_DAYS = 90;
 // ...but never trim below this many entries, even if every one of them is
 // older than the cutoff. If syncing stops for >90 days and then resumes, a

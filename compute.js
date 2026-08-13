@@ -134,20 +134,49 @@
     return (dt.getMonth() + 1) + '/' + dt.getDate();
   }
 
-  function latestTwoSnapshots(snapshotHistory) {
-    var hist = (snapshotHistory || []).slice().sort(function (a, b) {
-      return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
-    });
-    if (hist.length < 2) return null;
-    return { prev: hist[hist.length - 2], cur: hist[hist.length - 1] };
+  // ── 주차별 비교: 갱신마다 흔들리지 않도록 "지난주 금요일 vs 이번주 금요일"만 쓴다 ──
+  // Phase 4까지는 "가장 최근 스냅샷 2개"를 그대로 비교했는데,
+  // 스케줄 동기화가 하루 4회씩 매 평일 돌면서 snapshotHistory가 날짜별로
+  // 쌓이자 이 비교가 매번(예: 화요일→수요일) 바뀌어버렸다. "주차별" 비교라는
+  // 이름에 맞게 금요일 스냅샷끼리만 비교하고, 그 사이 평일 동기화는 이 위젯에
+  // 영향을 주지 않도록 고정한다. 대시보드의 다른 부분(카드, 표 등)은 여전히
+  // data.json.products(최신 동기화 값)를 직접 쓰므로 매 동기화마다 갱신된다 —
+  // 이 두 함수(와 이걸 쓰는 "주차별 핵심 지표 비교"/"상품별 주요 변동" 위젯)만
+  // 영향을 받는다.
+  function fridayOnOrBefore(date) {
+    var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    var diff = (d.getDay() + 2) % 7; // 금=0, 토=1, 일=2, 월=3 ... 처럼 "지난/오늘 금요일까지 며칠 전인지"
+    d.setDate(d.getDate() - diff);
+    return d;
+  }
+  function toDateStr(d) {
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+  // 딱 그 금요일에 동기화가 없었으면(공휴일 등) 그 이전의 가장 최근 스냅샷으로 대체.
+  function latestSnapshotOnOrBefore(snapshotHistory, dateStr) {
+    var hist = (snapshotHistory || [])
+      .filter(function (s) { return s.date <= dateStr; })
+      .sort(function (a, b) { return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+    return hist.length ? hist[hist.length - 1] : null;
+  }
+  function latestTwoFridaySnapshots(snapshotHistory, now) {
+    var thisFri = fridayOnOrBefore(now || new Date());
+    var lastFri = new Date(thisFri);
+    lastFri.setDate(lastFri.getDate() - 7);
+    var cur = latestSnapshotOnOrBefore(snapshotHistory, toDateStr(thisFri));
+    var prev = latestSnapshotOnOrBefore(snapshotHistory, toDateStr(lastFri));
+    if (!cur || !prev || cur.date === prev.date) return null;
+    return { prev: prev, cur: cur };
   }
 
-  function computeWeeklyComparison(snapshotHistory, n) {
-    var pair = latestTwoSnapshots(snapshotHistory);
+  function computeWeeklyComparison(snapshotHistory, n, now) {
+    var pair = latestTwoFridaySnapshots(snapshotHistory, now);
     if (!pair) {
       return {
         prev_label: '-', cur_label: '-', rows: [],
-        note: '비교할 이전 스냅샷이 아직 없습니다. 동기화가 하루 이상 누적되면 표시됩니다.'
+        note: '비교할 금요일 스냅샷이 아직 2주치 쌓이지 않았습니다. 다음 금요일 동기화 이후 표시됩니다.'
       };
     }
     var pt = computeTotal(pair.prev.products), ct = computeTotal(pair.cur.products);
@@ -168,8 +197,8 @@
    * 이번 달 취급고 실적이 바뀐 상품 전부를 변동폭 큰 순으로. (top-N 고정 아님)
    * productsMeta는 스냅샷에 team이 없을 때의 보조 정보(현재 data.json.products).
    */
-  function computeWeeklyProductChanges(snapshotHistory, n, productsMeta) {
-    var pair = latestTwoSnapshots(snapshotHistory);
+  function computeWeeklyProductChanges(snapshotHistory, n, productsMeta, now) {
+    var pair = latestTwoFridaySnapshots(snapshotHistory, now);
     if (!pair) return { biz: [], mkt: [] };
     var meta = productsMeta || {};
     var monthIdx = Math.max(0, n - 1), monthLabel = MONTH_LABELS[monthIdx];
@@ -209,7 +238,7 @@
     quarterSegmentProducts: quarterSegmentProducts,
     quarterRate: quarterRate,
     snapDateLabel: snapDateLabel,
-    latestTwoSnapshots: latestTwoSnapshots,
+    latestTwoFridaySnapshots: latestTwoFridaySnapshots,
     computeWeeklyComparison: computeWeeklyComparison,
     computeWeeklyProductChanges: computeWeeklyProductChanges
   };

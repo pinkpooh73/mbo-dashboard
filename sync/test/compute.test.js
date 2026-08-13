@@ -138,30 +138,33 @@ test('quarterRate: 값이 0인 달은 기본적으로 평균에서 빼고, 옵�
 });
 
 // ─────────────────────────────────────────────────────────────
-// 주차별 비교 — 스냅샷이 부족할 때의 안전 처리
+// 주차별 비교 — 금요일 스냅샷끼리만 비교한다 (business-rules.md 참고)
+// 2026-07-24/07-31은 실제로 금요일이다 — `now`를 그 주 안의 어느 날로 고정해
+// "지난주 금요일 vs 이번주 금요일"이 이 두 날짜를 가리키게 만든다.
 // ─────────────────────────────────────────────────────────────
 const snap = (date, products) => ({ date, products });
+const AS_OF_0731_WEEK = new Date('2026-08-01T00:00:00'); // 토요일 — 이번주 금=7/31, 지난주 금=7/24
 
 test('computeWeeklyComparison: 스냅샷이 0개/1개면 빈 표 + 안내 문구를 돌려준다', () => {
   for (const hist of [undefined, [], [snap('2026-07-31', {})]]) {
-    const w = C.computeWeeklyComparison(hist, 7);
+    const w = C.computeWeeklyComparison(hist, 7, AS_OF_0731_WEEK);
     assert.deepEqual(w.rows, []);
     assert.equal(w.prev_label, '-');
     assert.equal(w.cur_label, '-');
-    assert.match(w.note, /이전 스냅샷/);
+    assert.match(w.note, /금요일 스냅샷/);
   }
 });
 
 test('computeWeeklyProductChanges: 스냅샷이 0개/1개면 빈 목록', () => {
   for (const hist of [undefined, [], [snap('2026-07-31', {})]]) {
-    assert.deepEqual(C.computeWeeklyProductChanges(hist, 7), { biz: [], mkt: [] });
+    assert.deepEqual(C.computeWeeklyProductChanges(hist, 7, undefined, AS_OF_0731_WEEK), { biz: [], mkt: [] });
   }
 });
 
-test('computeWeeklyComparison: 최신 2개를 (입력 순서와 무관하게) 날짜순으로 비교한다', () => {
+test('computeWeeklyComparison: 지난주/이번주 "금요일" 스냅샷만 비교한다 (입력 순서 무관)', () => {
   const mk = (actB) => ({ '비즈링': product({ kpi_b: [100, ...Z12().slice(1)], act_b: [actB, ...Z12().slice(1)] }) });
   const hist = [snap('2026-07-31', mk(80)), snap('2026-07-16', mk(10)), snap('2026-07-24', mk(50))];
-  const w = C.computeWeeklyComparison(hist, 7);
+  const w = C.computeWeeklyComparison(hist, 7, AS_OF_0731_WEEK);
   assert.equal(w.prev_label, '7/24');
   assert.equal(w.cur_label, '7/31');
   const bill = w.rows.find((r) => r.label === '취급고 달성률');
@@ -169,6 +172,41 @@ test('computeWeeklyComparison: 최신 2개를 (입력 순서와 무관하게) �
   assert.equal(bill.cur, 80);
   const cum = w.rows.find((r) => r.label === '누적 취급고');
   assert.equal(cum.cur, 800000, '만원 → 원 변환');
+});
+
+test('computeWeeklyComparison: 금요일 사이 평일 동기화가 쌓여도 결과가 흔들리지 않는다 (회귀)', () => {
+  // 스케줄 동기화가 매 평일 돌면서 생기는 상황: 7/24(금)~7/31(금) 사이 화/수/목에도
+  // 스냅샷이 쌓인다. 그래도 비교는 여전히 금요일 두 개(7/24 vs 7/31)여야 한다 —
+  // "가장 최근 2개"로 뽑으면 7/30(목) vs 7/31(금)이 나와버리는 게 고쳐진 버그다.
+  const mk = (actB) => ({ '비즈링': product({ kpi_b: [100, ...Z12().slice(1)], act_b: [actB, ...Z12().slice(1)] }) });
+  const hist = [
+    snap('2026-07-24', mk(50)),
+    snap('2026-07-28', mk(55)),
+    snap('2026-07-29', mk(60)),
+    snap('2026-07-30', mk(65)),
+    snap('2026-07-31', mk(80))
+  ];
+  const w = C.computeWeeklyComparison(hist, 7, AS_OF_0731_WEEK);
+  assert.equal(w.prev_label, '7/24');
+  assert.equal(w.cur_label, '7/31');
+});
+
+test('computeWeeklyComparison: 다음 금요일이 아직 안 지났으면 직전 금요일 페어를 그대로 유지한다', () => {
+  // 8/7(금)이 다음 금요일인 주의 화요일(8/4) 시점 — "가장 최근에 지난 금요일"은
+  // 여전히 7/31이므로 표시되는 페어(7/24 vs 7/31)는 한 주 내내 바뀌지 않아야 한다.
+  const mk = (actB) => ({ '비즈링': product({ act_b: [actB, ...Z12().slice(1)] }) });
+  const tueBeforeNextFriday = new Date('2026-08-04T00:00:00');
+  const w = C.computeWeeklyComparison([snap('2026-07-24', mk(50)), snap('2026-07-31', mk(80))], 7, tueBeforeNextFriday);
+  assert.equal(w.prev_label, '7/24');
+  assert.equal(w.cur_label, '7/31');
+});
+
+test('computeWeeklyComparison: 금요일에 동기화가 없었으면(공휴일 등) 그 이전 가장 최근 스냅샷으로 대체한다', () => {
+  const mk = (actB) => ({ '비즈링': product({ act_b: [actB, ...Z12().slice(1)] }) });
+  // 7/31(금)엔 스냅샷이 없고 7/30(목)이 마지막 — 7/24(금)과 비교되어야 한다.
+  const w = C.computeWeeklyComparison([snap('2026-07-24', mk(50)), snap('2026-07-30', mk(65))], 7, AS_OF_0731_WEEK);
+  assert.equal(w.prev_label, '7/24');
+  assert.equal(w.cur_label, '7/30');
 });
 
 test('computeWeeklyProductChanges: 이번 달 취급고가 바뀐 상품 전부를 변동폭 큰 순으로', () => {
@@ -186,7 +224,7 @@ test('computeWeeklyProductChanges: 이번 달 취급고가 바뀐 상품 전부�
     '변동없음': product({ team: 'biz', act_b: at(6, 42) }),
     '신규': product({ team: 'biz', act_b: at(6, 7) })        // 0 -> 7
   };
-  const res = C.computeWeeklyProductChanges([snap('2026-07-24', prev), snap('2026-07-31', cur)], 7);
+  const res = C.computeWeeklyProductChanges([snap('2026-07-24', prev), snap('2026-07-31', cur)], 7, undefined, AS_OF_0731_WEEK);
   assert.deepEqual(res.biz.map((r) => r.name), ['들리고', '비즈링', '신규'], '변동폭 내림차순, 변동 없는 상품은 제외');
   assert.equal(res.biz[0].month, '7월');
   assert.equal(res.biz[0].prev, 100000);
@@ -201,7 +239,7 @@ test('computeWeeklyProductChanges: 스냅샷에 team이 없으면 현재 product
   const prev = { 'RMN': strip(product({ act_b: at(6, 1) })) };
   const cur = { 'RMN': strip(product({ act_b: at(6, 9) })) };
   const meta = { 'RMN': { team: 'mkt' } };
-  const res = C.computeWeeklyProductChanges([snap('2026-07-24', prev), snap('2026-07-31', cur)], 7, meta);
+  const res = C.computeWeeklyProductChanges([snap('2026-07-24', prev), snap('2026-07-31', cur)], 7, meta, AS_OF_0731_WEEK);
   assert.deepEqual(res.mkt.map((r) => r.name), ['RMN']);
   assert.deepEqual(res.biz, []);
 });

@@ -92,7 +92,7 @@ test('retention keeps the freshly appended entry even when everything else is ol
 
 test(`never prunes below ${MIN_KEPT_ENTRIES} entries, so 주차별 비교 always has something to compare`, () => {
   // Sync stopped for a year, then resumed: an age-only filter would leave a
-  // single entry and the frontend's latestTwoSnapshots() would come up empty.
+  // single entry and the frontend's latestTwoFridaySnapshots() would come up empty.
   const nowIso = '2026-07-31T09:00:00+09:00';
   const existing = [
     { date: daysBefore(nowIso, 400), products: {} },
