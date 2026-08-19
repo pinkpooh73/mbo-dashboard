@@ -488,8 +488,10 @@ function selectSearchProduct(p){
   searchChart=new Chart(document.getElementById('prod-search-chart'),{
     type:'line',
     data:{labels:M,datasets:[
-      {label:'취급고',data:pd.act_b,borderColor:'#00BAD1',backgroundColor:'rgba(0,186,209,.14)',pointBackgroundColor:'#00BAD1',pointRadius:3,borderWidth:2,tension:.3,fill:true},
-      {label:'매출',data:pd.act_r,borderColor:'#FF9F43',backgroundColor:'rgba(255,159,67,.14)',pointBackgroundColor:'#FF9F43',pointRadius:3,borderWidth:2,tension:.3,fill:true}
+      {label:'취급고 KPI',data:pd.kpi_b,borderColor:'#00BAD1',borderDash:[5,4],pointRadius:0,borderWidth:1.5,tension:.3,fill:false},
+      {label:'취급고 실적',data:pd.act_b,borderColor:'#00BAD1',backgroundColor:'rgba(0,186,209,.14)',pointBackgroundColor:'#00BAD1',pointRadius:3,borderWidth:2,tension:.3,fill:true},
+      {label:'매출 KPI',data:pd.kpi_r,borderColor:'#FF9F43',borderDash:[5,4],pointRadius:0,borderWidth:1.5,tension:.3,fill:false},
+      {label:'매출 실적',data:pd.act_r,borderColor:'#FF9F43',backgroundColor:'rgba(255,159,67,.14)',pointBackgroundColor:'#FF9F43',pointRadius:3,borderWidth:2,tension:.3,fill:true}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:true,position:'top',align:'end'},tooltip:{callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+(ctx.raw||0).toLocaleString()+'만';}}}},
@@ -498,10 +500,18 @@ function selectSearchProduct(p){
   });
   var totalB=pd.act_b.reduce(function(a,b){return a+b;},0);
   var totalR=pd.act_r.reduce(function(a,b){return a+b;},0);
+  var kpiTotalB=pd.kpi_b.reduce(function(a,b){return a+b;},0);
+  var kpiTotalR=pd.kpi_r.reduce(function(a,b){return a+b;},0);
+  var rateTotalB=kpiTotalB>0?Math.round(totalB/kpiTotalB*1000)/10:0;
+  var rateTotalR=kpiTotalR>0?Math.round(totalR/kpiTotalR*1000)/10:0;
   document.getElementById('prod-search-thead').innerHTML='<th>구분</th>'+M.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>합계</th>';
   document.getElementById('prod-search-tbl').innerHTML=
-    '<tr><td style="font-weight:600;">취급고(만원)</td>'+pd.act_b.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalB)+'</td></tr>'+
-    '<tr><td style="font-weight:600;">매출(만원)</td>'+pd.act_r.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalR)+'</td></tr>';
+    '<tr><td style="font-weight:600;">취급고 KPI(만원)</td>'+pd.kpi_b.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;">'+f0(kpiTotalB)+'</td></tr>'+
+    '<tr><td style="font-weight:600;">취급고 실적(만원)</td>'+pd.act_b.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalB)+'</td></tr>'+
+    '<tr><td style="font-weight:600;">취급고 달성률(%)</td>'+pd.bill.map(function(v){return '<td style="color:'+rc(v)+';">'+v+'%</td>';}).join('')+'<td style="font-weight:700;color:'+rc(rateTotalB)+';">'+rateTotalB+'%</td></tr>'+
+    '<tr><td style="font-weight:600;">매출 KPI(만원)</td>'+pd.kpi_r.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;">'+f0(kpiTotalR)+'</td></tr>'+
+    '<tr><td style="font-weight:600;">매출 실적(만원)</td>'+pd.act_r.map(function(v){return '<td>'+f0(v)+'</td>';}).join('')+'<td style="font-weight:700;color:var(--primary);">'+f0(totalR)+'</td></tr>'+
+    '<tr><td style="font-weight:600;">매출 달성률(%)</td>'+pd.rev.map(function(v){return '<td style="color:'+rc(v)+';">'+v+'%</td>';}).join('')+'<td style="font-weight:700;color:'+rc(rateTotalR)+';">'+rateTotalR+'%</td></tr>';
   res.style.display='block';
 }
 function initProductSearch(){
