@@ -213,6 +213,9 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
     <button id="nb-camp" class="nb" onclick="go('camp')"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8.5 3.5v3M15.5 3.5v3"/></svg><span>월별 캠페인</span></button>
     <button id="nb-raw" class="nb" onclick="go('raw')"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M9.5 9.5v10M3.5 14.5h17"/></svg><span>KPI 데이터</span></button>
   </nav>
+  <div style="padding:0 .75rem .5rem;">
+    <button class="nb" onclick="logoutApp()" style="color:var(--danger);"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>로그아웃</span></button>
+  </div>
   <div class="sidefoot">2026년_미디어사업실<br>매출 관리_v2.0</div>
 </aside>
 <div id="side-ovl" onclick="toggleSide()"></div>
@@ -1076,6 +1079,10 @@ function unlockApp(){
   document.getElementById('gate').classList.add('hidden');
   document.getElementById('app').classList.add('ready');
   loadDashboard();
+}
+function logoutApp(){
+  try{ localStorage.removeItem(GATE_KEY); }catch(e){}
+  location.reload();
 }
 function tryUnlock(){
   var input=document.getElementById('gate-pw');
