@@ -10,6 +10,9 @@
      body 하단의 인라인 스크립트보다 "나중에" 실행된다 → Chart 전역을 건드리는
      코드는 전부 applyChartDefaults()/initDashboard() 안으로 옮겨져 있다. -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- KPI 데이터 탭의 "엑셀 다운로드" 버튼에서만 쓰인다 — 클라이언트에서 표를 xlsx로
+     직접 변환하므로 서버/백엔드가 필요 없다. -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   /* Vuexy-inspired palette */
@@ -347,7 +350,13 @@ td:not(:first-child){text-align:right;font-family:"DM Mono",monospace;font-size:
 
 <!-- KPI 데이터 -->
 <div id="pg-raw" class="page">
-  <p style="font-size:12px;color:var(--ts);margin-bottom:.45rem;">미디어사업실_전체 시트 원본 · 금액=원 · <span style="color:#4FB88A;">■</span>100%↑ <span style="color:#E3A857;">■</span>70~100% <span style="color:#E2685C;">■</span>70%미만</p>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:.6rem;flex-wrap:wrap;margin-bottom:.45rem;">
+    <p style="font-size:12px;color:var(--ts);margin:0;">미디어사업실_전체 시트 원본 · 금액=원 · <span style="color:#4FB88A;">■</span>100%↑ <span style="color:#E3A857;">■</span>70~100% <span style="color:#E2685C;">■</span>70%미만</p>
+    <button id="raw-xlsx-btn" onclick="downloadKpiExcel()" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:.5rem .85rem;font-size:12px;font-weight:600;border:1px solid var(--bdr2);border-radius:var(--radius-sm);background:var(--sur);color:var(--tp);cursor:pointer;">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 18v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
+      <span>엑셀 다운로드</span>
+    </button>
+  </div>
   <div id="raw-wrap" style="overflow-x:auto;border:1px solid var(--bdr);border-radius:12px;"></div>
 </div>
 
@@ -934,6 +943,16 @@ function buildRaw(){
       '<span style="font-family:DM Mono,monospace;color:var(--tm);">'+String(err)+'</span></div>';
     console.error('raw-table.html load failed', err);
   });
+}
+// xlsx.full.min.js는 defer 로드라 이 함수가 정의되는 시점엔 아직 없을 수 있고,
+// raw-table.html도 이 탭을 처음 열 때만 fetch되므로 둘 다 준비된 뒤에만 내려준다.
+function downloadKpiExcel(){
+  var table=document.querySelector('#raw-wrap table');
+  if(!table){ alert('원본 표를 아직 불러오는 중입니다. 잠시 후 다시 시도해 주세요.'); return; }
+  if(typeof XLSX==='undefined'){ alert('다운로드 기능을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.'); return; }
+  var wb=XLSX.utils.table_to_book(table,{sheet:'KPI 데이터'});
+  var ts=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,'KPI_데이터_'+ts+'.xlsx');
 }
 
 // ── 데이터 품질 경고 배너 ──
